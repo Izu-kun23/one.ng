@@ -1,6 +1,6 @@
 import React from 'react';
-import { View, StyleSheet, Animated, Image } from 'react-native';
-import { auth } from '../firebaseConfig'; // Import Firebase auth
+import { View, StyleSheet, Animated } from 'react-native';
+import { auth } from '../../firebaseConfig'; // Import Firebase auth
 import { onAuthStateChanged } from "firebase/auth";
 
 export default class LoadingScreen extends React.Component {
@@ -34,20 +34,18 @@ export default class LoadingScreen extends React.Component {
       useNativeDriver: false,
     }).start();
 
-    // Navigate after 5 seconds
-    onAuthStateChanged(auth, (user) => {
-      setTimeout(() => {
-        this.props.navigation.navigate(user ? "App" : "Auth");
-      }, 5000);
-    });
+    // Navigate to OptionsScreen after 5 seconds
+    setTimeout(() => {
+      this.props.navigation.navigate("Options");
+    }, 5000);
   }
 
   render() {
     return (
       <View style={styles.container}>
-        {/* Animated Image */}
+        {/* Animated Logo */}
         <Animated.Image
-          source={require("../assets/loading.png")}
+          source={require("../../assets/loading.png")}
           style={[
             styles.image,
             {
@@ -59,10 +57,17 @@ export default class LoadingScreen extends React.Component {
 
         {/* Loading bar */}
         <View style={styles.loadingContainer}>
-          <Animated.View style={[styles.loadingDash, { width: this.loadingWidth.interpolate({
-            inputRange: [0, 100],
-            outputRange: ["0%", "100%"],
-          }) }]} />
+          <Animated.View
+            style={[
+              styles.loadingDash,
+              {
+                width: this.loadingWidth.interpolate({
+                  inputRange: [0, 100],
+                  outputRange: ["0%", "100%"],
+                }),
+              },
+            ]}
+          />
         </View>
       </View>
     );
@@ -77,8 +82,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#f8f8f8",
   },
   image: {
-    width: 350, 
-    height: 350, 
+    width: 350,
+    height: 350,
     resizeMode: "contain",
   },
   loadingContainer: {

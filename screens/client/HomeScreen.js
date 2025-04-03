@@ -5,9 +5,9 @@ import { useNavigation } from "@react-navigation/native";
 
 // Temporary Vendor Data
 const vendors = [
-    { id: "1", name: "Joe's Coffee", category: "Coffee", description: "The best coffee in town!", location: "123 Main St, NY", image: require("../assets/tempImage1.jpg") },
-    { id: "2", name: "Fresh Bites", category: "Food", description: "Organic and healthy meals!", location: "456 Oak St, LA", image: require("../assets/tempImage2.jpg") },
-    { id: "3", name: "Tech Haven", category: "Gadgets", description: "Gadgets and accessories.", location: "789 Silicon Ave, SF", image: require("../assets/tempImage3.jpg") },
+    { id: "1", name: "Joe's Coffee", category: "Coffee", description: "The best coffee in town!", location: "123 Main St, NY", image: require("../../assets/tempImage1.jpg") },
+    { id: "2", name: "Fresh Bites", category: "Food", description: "Organic and healthy meals!", location: "456 Oak St, LA", image: require("../../assets/tempImage2.jpg") },
+    { id: "3", name: "Tech Haven", category: "Gadgets", description: "Gadgets and accessories.", location: "789 Silicon Ave, SF", image: require("../../assets/tempImage3.jpg") },
 ];
 
 // Categories

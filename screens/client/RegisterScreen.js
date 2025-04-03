@@ -10,14 +10,14 @@ import {
   Image,
   StatusBar,
 } from "react-native";
-import { auth } from "../firebaseConfig";
+import { auth } from "../../firebaseConfig";
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { getFirestore, doc, setDoc } from "firebase/firestore";
-import UserPermissions from "../utilities/UserPermissions";
+import UserPermissions from "../../utilities/UserPermissions";
 import * as ImagePicker from "expo-image-picker";
 import { Ionicons } from "@expo/vector-icons";
-import Fire from "../Fire"; 
-import loadingImage from "../assets/loading.png"; // Import the loading image
+import Fire from "../../Fire"; 
+import loadingImage from "../../assets/loading.png"; // Import the loading image
 
 export default class RegisterScreen extends React.Component {
   state = {
@@ -60,7 +60,7 @@ export default class RegisterScreen extends React.Component {
         createdAt: new Date().toISOString(),
       });
 
-      this.props.navigation.navigate("Home");
+      this.props.navigation.navigate("Login");
     } catch (error) {
       this.setState({ errorMessage: error.message });
     }

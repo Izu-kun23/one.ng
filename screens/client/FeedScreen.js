@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, FlatList, ActivityIndicator, Image, TextInput }
 import { Ionicons } from "@expo/vector-icons";
 import { getFirestore, collection, query, onSnapshot, orderBy } from "firebase/firestore";
 import moment from "moment";
-import { app } from "../firebaseConfig"; // Import Firebase config
+import { app } from "../../firebaseConfig"; // Import Firebase config
 
 const firestore = getFirestore(app); // Initialize Firestore
 

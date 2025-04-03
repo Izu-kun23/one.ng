@@ -9,7 +9,7 @@ import {
   StatusBar,
   LayoutAnimation
 } from "react-native";
-import { auth } from "../firebaseConfig"; 
+import { auth } from "../../firebaseConfig"; 
 import { signInWithEmailAndPassword } from "firebase/auth";
 
 export default class LoginScreen extends React.Component {
@@ -93,7 +93,7 @@ export default class LoginScreen extends React.Component {
 
         {/* Loading Image at Bottom */}
         <Image 
-          source={require("../assets/loading.png")} 
+          source={require("../../assets/loading.png")} 
           style={styles.loadingImage} 
         />
       </View>

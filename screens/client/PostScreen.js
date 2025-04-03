@@ -2,8 +2,8 @@ import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, TextInput, Image } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
-import Fire from "../Fire";  
-import UserPermissions from "../utilities/UserPermissions";  
+import Fire from "../../Fire";  
+import UserPermissions from "../../utilities/UserPermissions";  
 
 export default class PostScreen extends React.Component {
     state = {
@@ -102,7 +102,7 @@ export default class PostScreen extends React.Component {
 
                 <View style={styles.inputContainer}>
                     {/* Placeholder for avatar */}
-                    <Image source={{ uri: this.state.userAvatar || require("../assets/tempAvatar.jpg") }} style={styles.avatar} />
+                    <Image source={{ uri: this.state.userAvatar || require("../../assets/tempAvatar.jpg") }} style={styles.avatar} />
                     <TextInput
                         autoFocus={true}
                         multiline={true}

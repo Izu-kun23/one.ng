@@ -1,10 +1,10 @@
 import React from "react";
 import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView } from "react-native";
 import { doc, onSnapshot } from "firebase/firestore";
-import Fire from "../Fire";
+import Fire from "../../Fire";
 import Ionicons from "react-native-vector-icons/Ionicons";  // Import Ionicons
 
-export default class ProfileScreen extends React.Component {
+export default class SettingsScreen extends React.Component {
   state = {
     user: {},
   };
@@ -54,7 +54,7 @@ export default class ProfileScreen extends React.Component {
               source={
                 user.avatar
                   ? { uri: user.avatar }
-                  : require("../assets/tempAvatar.jpg")
+                  : require("../../assets/tempAvatar.jpg")
               }
               style={styles.avatar}
             />
@@ -99,7 +99,10 @@ export default class ProfileScreen extends React.Component {
         </View>
 
         {/* Bottom Buttons */}
-        <TouchableOpacity style={styles.vendorButton}>
+        <TouchableOpacity
+          style={styles.vendorButton}
+          onPress={() => this.props.navigation.navigate("Vendor")}  // Navigate to Vendor Login screen
+        >
           <Ionicons name="briefcase-outline" size={20} color="black" style={styles.icon} />
           <Text style={styles.vendorText}>Switch to Vendor</Text>
         </TouchableOpacity>
@@ -146,11 +149,13 @@ const styles = StyleSheet.create({
     marginTop: 10,
     paddingHorizontal: 20,
     paddingVertical: 10,
-    borderRadius: 10,
-    backgroundColor: "#386F4F",
+    borderRadius: 19,
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "grey",
   },
   editProfileText: {
-    color: "#fff",
+    color: "black",
     fontSize: 14,
     fontWeight: "600",
   },
