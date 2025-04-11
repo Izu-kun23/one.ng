@@ -3,6 +3,7 @@ import { View, TouchableOpacity } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { createDrawerNavigator } from "@react-navigation/drawer"; // Import Drawer Navigator
 import { Ionicons } from "@expo/vector-icons";
 
 import LoadingScreen from "./screens/client/LoadingScreen";
@@ -11,17 +12,64 @@ import HomeScreen from "./screens/client/HomeScreen";
 import LoginScreen from "./screens/client/LoginScreen";
 import RegisterScreen from "./screens/client/RegisterScreen";
 import VendorLogin from "./screens/vendor/VendorLogin";
-
+import VendorRegister from "./screens/vendor/VendorRegister";
+import VendorHome from "./screens/vendor/VendorHome";
+import VendorShop from "./screens/vendor/VendorShop.js";
 import VendorDetail from "./screens/client/VendorDetail";
 import EditProfileScreen from "./screens/client/EditProfileScreen";
 import MessageScreen from "./screens/client/MessageScreen";
 import PostScreen from "./screens/client/PostScreen";
 import SettingsScreen from "./screens/client/SettingsScreen";
 import FeedScreen from "./screens/client/FeedScreen";
+import AddShop from "./screens/vendor/AddShop.js";
 
 // Navigation Setup
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
+const Drawer = createDrawerNavigator(); // Create Drawer Navigator
+
+// Vendor Drawer (Wrap only the VendorHome screen in Drawer)
+function VendorDrawer() {
+  return (
+    <Drawer.Navigator
+      initialRouteName="Dashboard"
+      screenOptions={{
+        headerShown: false, // Hide default header
+        drawerStyle: {
+          backgroundColor: "#fff", // Dark background
+          width: 250, // Adjust width
+          iconcolor: "#000", // Icon color
+        },
+        drawerLabelStyle: {
+          color: "black", // Light text color
+          fontSize: 16,
+        },
+        drawerActiveTintColor: "#386F4F", // Highlighted item color
+        drawerInactiveTintColor: "#ECF0F1",
+      }}
+    >
+      {/* ✅ Remove the incorrect semicolon here */}
+      <Drawer.Screen
+        name="Dashboard"
+        component={VendorHome}
+        options={{
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="home-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Drawer.Screen
+        name="Shop"
+        component={VendorShop}
+        options={{
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="pricetag" size={size} color={color} />
+          ),
+        }}
+      />
+    </Drawer.Navigator>
+  );
+}
 
 // 🔹 Custom Post Button (Floating Action Button)
 const CustomPostButton = ({ onPress }) => (
@@ -75,18 +123,18 @@ function BottomTabs({ navigation }) {
         <Tab.Screen name="Home" component={HomeScreen} />
         <Tab.Screen name="Messages" component={MessageScreen} />
         <Tab.Screen
-  name="Post"
-  options={{
-    tabBarButton: (props) => (
-      <CustomPostButton
-        {...props}
-        onPress={() => navigation.navigate("PostModal")}
-      />
-    ),
-  }}
->
-  {() => null}
-</Tab.Screen>
+          name="Post"
+          options={{
+            tabBarButton: (props) => (
+              <CustomPostButton
+                {...props}
+                onPress={() => navigation.navigate("PostModal")}
+              />
+            ),
+          }}
+        >
+          {() => null}
+        </Tab.Screen>
         <Tab.Screen name="Feed" component={FeedScreen} />
         <Tab.Screen name="Settings" component={SettingsScreen} />
       </Tab.Navigator>
@@ -125,6 +173,9 @@ function AppStack() {
         component={EditProfileScreen}
         options={{ title: "Edit Profile" }}
       />
+      <Stack.Screen name="SettingsScreen" 
+      component={SettingsScreen} />
+
     </Stack.Navigator>
   );
 }
@@ -143,7 +194,7 @@ function AuthStack() {
         component={RegisterScreen}
         options={{ headerShown: false }}
       />
-        <Stack.Screen
+      <Stack.Screen
         name="VendorLogin"
         component={VendorLogin}
         options={{
@@ -165,6 +216,28 @@ function VendorStack() {
         options={{
           headerShown: false,
           title: "Vendor Login",
+        }}
+      />
+      <Stack.Screen
+        name="VendorRegister"
+        component={VendorRegister}
+        options={{
+          headerShown: false,
+          title: "Vendor Register",
+        }}
+      />
+      <Stack.Screen
+        name="VendorHome"
+        component={VendorDrawer} // Wrap VendorHome in Drawer
+        options={{
+          headerShown: false, // Disable default header for VendorHome
+        }}
+      />
+      <Stack.Screen
+        name="AddShop"
+        component={AddShop} // Wrap VendorHome in Drawer
+        options={{
+          headerShown: false, // Disable default header for VendorHome
         }}
       />
     </Stack.Navigator>

@@ -7,9 +7,9 @@ import {
   TouchableOpacity,
   Image,
   StatusBar,
-  LayoutAnimation
+  LayoutAnimation,
 } from "react-native";
-import { auth } from "../../firebaseConfig"; 
+import { auth } from "../../firebaseConfig";
 import { signInWithEmailAndPassword } from "firebase/auth";
 
 export default class VendorLogin extends React.Component {
@@ -27,7 +27,7 @@ export default class VendorLogin extends React.Component {
     const { email, password } = this.state;
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      this.props.navigation.navigate("App");
+      this.props.navigation.navigate("VendorHome"); // Navigate to VendorHome after successful login
     } catch (error) {
       this.setState({ errorMessage: error.message });
     }
@@ -83,15 +83,19 @@ export default class VendorLogin extends React.Component {
         {/* 🔹 Return to Customer Page Button */}
         <TouchableOpacity
           style={styles.returnButton}
-          onPress={() => this.props.navigation.navigate("Settings")} // Navigate to Settings/Profile
+          onPress={() => {
+            // Check if this navigation call is correct and is going to the correct screen
+            this.props.navigation.getParent().navigate("Auth", { screen: "Login" });          }}
         >
-          <Text style={{ color: "#FFF", fontWeight: "500" }}>Return to Customer Page</Text>
+          <Text style={{ color: "#FFF", fontWeight: "500" }}>
+            Return to Customer Page
+          </Text>
         </TouchableOpacity>
 
         {/* Sign Up Link */}
-        <TouchableOpacity 
+        <TouchableOpacity
           style={{ alignSelf: "center", marginTop: 15 }}
-          onPress={() => this.props.navigation.navigate('Register')}
+          onPress={() => this.props.navigation.navigate("VendorRegister")}
         >
           <Text style={{ color: "#414959", fontSize: 13 }}>
             New to OneNG?{" "}
@@ -100,9 +104,9 @@ export default class VendorLogin extends React.Component {
         </TouchableOpacity>
 
         {/* Loading Image */}
-        <Image 
-          source={require("../../assets/loading.png")} 
-          style={styles.loadingImage} 
+        <Image
+          source={require("../../assets/loading.png")}
+          style={styles.loadingImage}
         />
       </View>
     );
@@ -119,14 +123,14 @@ const styles = StyleSheet.create({
   greetingCard: {
     width: "110%",
     height: "40%",
-    backgroundColor: "#386F4F", 
-    borderBottomLeftRadius: 65, 
-    borderBottomRightRadius: 65, 
+    backgroundColor: "#386F4F",
+    borderBottomLeftRadius: 65,
+    borderBottomRightRadius: 65,
     justifyContent: "center",
     alignItems: "center",
     paddingTop: 40,
     position: "absolute",
-    top: 0, 
+    top: 0,
   },
   greetingText: {
     fontSize: 46,
@@ -159,7 +163,7 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   button: {
-    width: "45%",
+    width: "55%",
     backgroundColor: "#386F4F",
     borderRadius: 8,
     height: 50,
@@ -168,7 +172,7 @@ const styles = StyleSheet.create({
     marginTop: 25,
   },
   returnButton: {
-    width: "65%", // Wider than login button
+    width: "55%", // Wider than login button
     backgroundColor: "#565B56", // Grayish tone for distinction
     borderRadius: 8,
     height: 50,

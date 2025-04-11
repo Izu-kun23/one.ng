@@ -8,7 +8,7 @@ export default function OptionsScreen({ navigation }) {
 
       <TouchableOpacity 
         style={styles.button} 
-        onPress={() => navigation.navigate('Auth')}
+        onPress={() => navigation.navigate('Vendor')}
       >
         <Text style={styles.buttonText}>Vendor</Text>
       </TouchableOpacity>
