@@ -1,5 +1,5 @@
 import { getAuth, createUserWithEmailAndPassword, signOut } from "firebase/auth";
-import { getFirestore, doc, setDoc, collection, addDoc, getDoc, deleteDoc } from "firebase/firestore";
+import { getFirestore, doc, setDoc, collection, addDoc, getDoc, deleteDoc, getDocs, } from "firebase/firestore";
 import { getStorage, ref, uploadBytesResumable, getDownloadURL, deleteObject } from "firebase/storage";
 import { app } from "./firebaseConfig";  // Your Firebase App Config file
 
@@ -58,27 +58,26 @@ addShop = async ({ shopName, about, street, city, category, shopImage, vendorNam
   }
 };
 
- getShops = async () => {
+getShops = async () => {
   try {
     // Reference to the shops collection
     const shopsCollectionRef = collection(Fire.shared.firestore, "shops");
 
-    // Fetch documents from the shops collection
-    const shopSnapshot = await getDoc(shopsCollectionRef);
-    
+    // Fetch documents from the shops collection (✅ use getDocs, not getDoc)
+    const shopSnapshot = await getDocs(shopsCollectionRef);
+
     // Map through the documents and get data
     const shopsList = shopSnapshot.docs.map((doc) => ({
-      id: doc.id, // The document ID
-      ...doc.data(), // The actual data from the document
+      id: doc.id,
+      ...doc.data(),
     }));
 
-    return shopsList; // Return the array of shops
+    return shopsList;
   } catch (error) {
     console.error("Error fetching shops:", error);
-    return []; // Return an empty array if there's an error
+    return [];
   }
-}
-
+};
 deleteShop = async (shopId, shopImage) => {
   if (!shopId) {
     console.error("❌ Shop ID is required for deletion!");

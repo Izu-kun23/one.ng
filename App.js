@@ -22,6 +22,9 @@ import PostScreen from "./screens/client/PostScreen";
 import SettingsScreen from "./screens/client/SettingsScreen";
 import FeedScreen from "./screens/client/FeedScreen";
 import AddShop from "./screens/vendor/AddShop.js";
+import ArchivedShops from "./screens/vendor/ArchivedShops.js";
+import ShopDetail from "./screens/vendor/ShopDetail.js";
+import VendorProfile from "./screens/vendor/VendorProfile.js";
 
 // Navigation Setup
 const Stack = createNativeStackNavigator();
@@ -67,6 +70,17 @@ function VendorDrawer() {
           ),
         }}
       />
+      <Drawer.Screen
+        name="Settings"
+        component={VendorProfile}
+        options={{
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="settings" size={size} color={color} />
+          ),
+        }}
+      />
+
+      
     </Drawer.Navigator>
   );
 }
@@ -236,6 +250,20 @@ function VendorStack() {
       <Stack.Screen
         name="AddShop"
         component={AddShop} // Wrap VendorHome in Drawer
+        options={{
+          headerShown: false, // Disable default header for VendorHome
+        }}
+      />
+      <Stack.Screen
+        name="ArchivedShops"
+        component={ArchivedShops} // Wrap VendorHome in Drawer
+        options={{
+          headerShown: false, // Disable default header for VendorHome
+        }}
+      />
+      <Stack.Screen
+        name="ShopDetail"
+        component={ShopDetail} // Wrap VendorHome in Drawer
         options={{
           headerShown: false, // Disable default header for VendorHome
         }}

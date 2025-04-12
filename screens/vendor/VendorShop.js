@@ -20,24 +20,25 @@ import {
   deleteDoc,
   setDoc,
   getDoc,
+  query,
+  where,
 } from "firebase/firestore";
 import Fire from "../../Fire";
-import {
-  Swipeable,
-  GestureHandlerRootView,
-} from "react-native-gesture-handler";
+import { Swipeable, GestureHandlerRootView } from "react-native-gesture-handler";
 
 const VendorShop = ({ navigation }) => {
   const [shops, setShops] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const vendorId = Fire.shared.uid;
 
   useEffect(() => {
     const fetchShops = async () => {
       setLoading(true);
       try {
         const shopsCollectionRef = collection(Fire.shared.firestore, "shops");
-        const querySnapshot = await getDocs(shopsCollectionRef);
+        const q = query(shopsCollectionRef, where("vendorId", "==", vendorId));
+        const querySnapshot = await getDocs(q);
         const fetchedShops = querySnapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
@@ -52,25 +53,24 @@ const VendorShop = ({ navigation }) => {
 
     fetchShops();
 
-    const unsubscribe = onSnapshot(
-      collection(Fire.shared.firestore, "shops"),
-      (snapshot) => {
-        const updatedShops = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        setShops(updatedShops);
-      }
-    );
+    const q = query(collection(Fire.shared.firestore, "shops"), where("vendorId", "==", vendorId));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const updatedShops = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setShops(updatedShops);
+    });
 
     return () => unsubscribe();
-  }, []);
+  }, [vendorId]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
       const shopsCollectionRef = collection(Fire.shared.firestore, "shops");
-      const querySnapshot = await getDocs(shopsCollectionRef);
+      const q = query(shopsCollectionRef, where("vendorId", "==", vendorId));
+      const querySnapshot = await getDocs(q);
       const refreshedShops = querySnapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
@@ -81,29 +81,24 @@ const VendorShop = ({ navigation }) => {
     } finally {
       setRefreshing(false);
     }
-  }, []);
+  }, [vendorId]);
 
   const handleDeleteShop = async (shopId) => {
-    Alert.alert(
-      "Delete Shop",
-      "Are you sure you want to delete this shop? This action cannot be undone.",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              await deleteDoc(doc(Fire.shared.firestore, "shops", shopId));
-              setShops(shops.filter((shop) => shop.id !== shopId));
-              console.log(`✅ Shop with ID ${shopId} deleted!`);
-            } catch (error) {
-              console.error("❌ Error deleting shop:", error);
-            }
-          },
+    Alert.alert("Delete Shop", "Are you sure you want to delete this shop? This action cannot be undone.", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await deleteDoc(doc(Fire.shared.firestore, "shops", shopId));
+            setShops((prevShops) => prevShops.filter((shop) => shop.id !== shopId));
+          } catch (error) {
+            console.error("Error deleting shop:", error);
+          }
         },
-      ]
-    );
+      },
+    ]);
   };
 
   const handleArchiveShop = async (shopId) => {
@@ -117,49 +112,41 @@ const VendorShop = ({ navigation }) => {
             const shopSnap = await getDoc(shopRef);
 
             if (shopSnap.exists()) {
-              const shopData = shopSnap.data();
-
-              // Move to "archived_shops" collection
-              await setDoc(
-                doc(Fire.shared.firestore, "archived_shops", shopId),
-                shopData
-              );
-
-              // Remove from "shops" collection
+              await setDoc(doc(Fire.shared.firestore, "archived_shops", shopId), shopSnap.data());
               await deleteDoc(shopRef);
-
-              setShops(shops.filter((shop) => shop.id !== shopId));
-              console.log(`✅ Shop with ID ${shopId} archived!`);
+              setShops((prevShops) => prevShops.filter((shop) => shop.id !== shopId));
             }
           } catch (error) {
-            console.error("❌ Error archiving shop:", error);
+            console.error("Error archiving shop:", error);
           }
         },
       },
     ]);
   };
 
-  const renderShop = ({ item }) => (
-    <Swipeable
-      renderRightActions={() => (
-        <View style={styles.swipeActions}>
-          <TouchableOpacity
-            style={styles.archiveButton}
-            onPress={() => handleArchiveShop(item.id)}
-          >
-            <Text style={styles.archiveButtonText}>Archive</Text>
-          </TouchableOpacity>
+  const renderRightActions = (shopId) => (
+    <View style={styles.swipeActions}>
+      <TouchableOpacity
+        style={[styles.actionButton, styles.archiveButton]}
+        onPress={() => handleArchiveShop(shopId)}
+      >
+        <Text style={styles.actionText}>Archive</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={[styles.actionButton, styles.deleteButton]}
+        onPress={() => handleDeleteShop(shopId)}
+      >
+        <Text style={styles.actionText}>Delete</Text>
+      </TouchableOpacity>
+    </View>
+  );
 
-          <TouchableOpacity
-            style={styles.deleteButton}
-            onPress={() => handleDeleteShop(item.id)}
-          >
-            <Text style={styles.deleteButtonText}>Delete</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-    >
-      <View style={styles.shopCard}>
+  const renderShop = ({ item }) => (
+    <Swipeable renderRightActions={() => renderRightActions(item.id)}>
+      <TouchableOpacity
+        style={styles.shopCard}
+        onPress={() => navigation.navigate("ShopDetail", { shop: item })}
+      >
         {item.image ? (
           <Image source={{ uri: item.image }} style={styles.shopImage} />
         ) : (
@@ -168,10 +155,7 @@ const VendorShop = ({ navigation }) => {
 
         <View style={styles.shopInfo}>
           <Text style={styles.shopName}>{item.name}</Text>
-          <Text style={styles.shopDescription}>{item.description}</Text>
-
           {item.about && <Text style={styles.shopAbout}>{item.about}</Text>}
-
           {item.location && (
             <View style={styles.locationContainer}>
               <Entypo name="location-pin" size={16} color="#386F4F" />
@@ -179,24 +163,17 @@ const VendorShop = ({ navigation }) => {
             </View>
           )}
         </View>
-
-        <TouchableOpacity
-          onPress={() => console.log("More options for:", item.name)}
-        >
-          <Entypo
-            name="dots-three-vertical"
-            size={20}
-            color="#666"
-            style={styles.menuIcon}
-          />
-        </TouchableOpacity>
-      </View>
+      </TouchableOpacity>
     </Swipeable>
   );
 
   return (
     <GestureHandlerRootView style={styles.container}>
       <Header title="My Shops" navigation={navigation} />
+
+      <TouchableOpacity style={styles.archiveButtonContainer} onPress={() => navigation.navigate("ArchivedShops")}>
+        <Text style={styles.archiveButtonText}>📂 View Archived Shops</Text>
+      </TouchableOpacity>
 
       {loading ? (
         <ActivityIndicator size="large" color="#386F4F" style={styles.loader} />
@@ -205,26 +182,17 @@ const VendorShop = ({ navigation }) => {
           data={shops}
           keyExtractor={(item) => item.id}
           renderItem={renderShop}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-          }
-          ListEmptyComponent={
-            <Text style={styles.emptyText}>No shops available.</Text>
-          }
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+          ListEmptyComponent={<Text style={styles.emptyText}>No shops available.</Text>}
         />
       )}
 
-      <TouchableOpacity
-        style={styles.addButton}
-        onPress={() => navigation.navigate("AddShop")}
-      >
+      <TouchableOpacity style={styles.addButton} onPress={() => navigation.navigate("AddShop")}>
         <Text style={styles.addButtonText}>+ Add Shop</Text>
       </TouchableOpacity>
     </GestureHandlerRootView>
   );
 };
-
-export default VendorShop;
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#fff", padding: 10 },
@@ -248,7 +216,6 @@ const styles = StyleSheet.create({
   },
   locationText: { fontSize: 12, color: "#666" },
   shopAbout: { fontSize: 16, color: "#444", marginTop: 1, marginBottom: 9 },
-  menuIcon: { paddingHorizontal: 10 },
   emptyText: {
     textAlign: "center",
     fontSize: 16,
@@ -257,34 +224,48 @@ const styles = StyleSheet.create({
   },
   addButton: {
     backgroundColor: "#386F4F",
-    padding: 18,
+    padding: 16,
     borderRadius: 8,
     alignItems: "center",
     marginTop: 20,
     marginBottom: 40,
   },
   addButtonText: { color: "#fff", fontSize: 18, fontWeight: "bold" },
-  swipeActions: { flexDirection: "row" },
+  swipeActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    marginVertical: 5,
+  },
+  actionButton: {
+    justifyContent: "center",
+    alignItems: "center",
+    width: 100,
+    height: "90%",
+    borderRadius: 10,
+    marginHorizontal: 2,
+  },
   archiveButton: {
     backgroundColor: "orange",
-    justifyContent: "center",
-    alignItems: "center",
-    width: 80,
-    borderRadius: 10,
-    marginVertical: 5,
-    height: "85%",
-    marginRight: 5,
   },
-  archiveButtonText: { color: "#fff", fontWeight: "bold" },
   deleteButton: {
     backgroundColor: "red",
-    justifyContent: "center",
-    alignItems: "center",
-    width: 80,
-    borderRadius: 10,
-    marginVertical: 5,
-    height: "85%",
-    marginRight: 5,
   },
-  deleteButtonText: { color: "#fff", fontWeight: "bold" },
+  actionText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+  archiveButtonContainer: {
+    backgroundColor: "white",
+    padding: 10,
+    borderRadius: 8,
+    alignItems: "center",
+    marginVertical: 6,
+    paddingHorizontal: 5,
+    marginBottom: 10,
+  },
+  archiveButtonText: { fontSize: 16, color: "#386F4F", fontWeight: "bold" },
 });
+
+export default VendorShop;
