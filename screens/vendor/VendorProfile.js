@@ -10,7 +10,8 @@ import {
 } from "react-native";
 import Header from "../../components/Header2";
 import Fire from "../../Fire";
-import { onSnapshot, collection, query, where } from "firebase/firestore"; // Firestore real-time listener
+import { onSnapshot, collection, query, where } from "firebase/firestore";
+import Ionicons from 'react-native-vector-icons/Ionicons';
 
 const VendorProfile = ({ navigation }) => {
   const [vendor, setVendor] = useState(null);
@@ -27,21 +28,21 @@ const VendorProfile = ({ navigation }) => {
       const vendorData = await Fire.shared.getVendorData(uid);
       setVendor(vendorData);
 
-      // Set up real-time listener for shops by the vendor
+      // Real-time listener for shops
       const unsubscribe = onSnapshot(
         query(
           collection(Fire.shared.firestore, "shops"),
           where("vendorId", "==", uid)
         ),
         (snapshot) => {
-          setShopCount(snapshot.docs.length); // Update shop count in real-time
+          setShopCount(snapshot.docs.length);
         },
         (error) => {
           console.error("Error listening for shops:", error);
         }
       );
 
-      return () => unsubscribe(); // Cleanup the listener when component unmounts
+      return () => unsubscribe();
     };
 
     fetchVendorData();
@@ -50,9 +51,8 @@ const VendorProfile = ({ navigation }) => {
   // Logout function
   const handleLogout = () => {
     if (Fire.shared.signOut) {
-      // Use 'signOut' method from Fire class
-      Fire.shared.signOut(); // Call the signOut function
-      navigation.navigate("VendorLogin"); // Navigate back to the Login screen
+      Fire.shared.signOut();
+      navigation.navigate("VendorLogin");
     } else {
       console.error("SignOut function is not defined!");
     }
@@ -62,7 +62,7 @@ const VendorProfile = ({ navigation }) => {
     <View style={styles.container}>
       <Header title="Settings" navigation={navigation} />
       <ScrollView contentContainerStyle={styles.content}>
-        {/* Avatar & Name */}
+        {/* Profile */}
         <View style={styles.profileSection}>
           {vendor?.avatar ? (
             <Image source={{ uri: vendor.avatar }} style={styles.avatar} />
@@ -77,7 +77,7 @@ const VendorProfile = ({ navigation }) => {
           <Text style={styles.email}>{vendor?.email}</Text>
         </View>
 
-        {/* Stats */}
+        {/* Shop stats */}
         <View style={styles.statsBox}>
           <Text style={styles.statsLabel}>Total Shops</Text>
           <Text style={styles.statsValue}>{shopCount}</Text>
@@ -113,12 +113,17 @@ const VendorProfile = ({ navigation }) => {
           <Text style={styles.editText}>Edit Profile</Text>
         </TouchableOpacity>
 
-        {/* Logout Button */}
-        <TouchableOpacity
-          style={styles.logoutBtn}
-          onPress={handleLogout} // Call handleLogout on button press
-        >
-          <Text style={styles.logoutText}>Logout</Text>
+        {/* Logout */}
+        <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
+          <View style={styles.logoutContent}>
+            <Ionicons
+              name="log-out-outline"
+              size={20}
+              color="#ff0000"
+              style={styles.logoutIcon}
+            />
+            <Text style={styles.logoutText}>Logout</Text>
+          </View>
         </TouchableOpacity>
       </ScrollView>
     </View>
@@ -215,27 +220,38 @@ const styles = StyleSheet.create({
   },
   editBtn: {
     marginTop: 40,
-    backgroundColor: "#007bff",
-    paddingVertical: 12,
+    backgroundColor: "#fff",
+    paddingVertical: 15,
     borderRadius: 10,
     alignItems: "center",
+    borderWidth: 1.5,
+    borderColor: "#386F4F",
   },
   editText: {
-    color: "#fff",
+    color: "#386F4F",
     fontSize: 16,
     fontWeight: "bold",
   },
   logoutBtn: {
     marginTop: 20,
-    backgroundColor: '#e74c3c', // Red color for logout button
-    paddingVertical: 12,
+    backgroundColor: "#fff",
+    paddingVertical: 15,
     borderRadius: 10,
-    alignItems: 'center',
+    alignItems: "center",
+    borderWidth: 1.5,
+    borderColor: "#ff0000",
   },
-  
+  logoutContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  logoutIcon: {
+    marginRight: 8,
+  },
   logoutText: {
-    color: '#fff',
+    color: "#ff0000",
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
 });

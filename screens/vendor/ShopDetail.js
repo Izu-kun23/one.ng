@@ -1,38 +1,91 @@
 import React from "react";
-import { View, ScrollView, Image, Text, TouchableOpacity, StyleSheet } from "react-native";
+import {
+  View,
+  ScrollView,
+  Image,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Dimensions,
+  Platform,
+  Linking,
+} from "react-native";
 import Header from "../../components/Header3";
+
+const { width } = Dimensions.get("window");
 
 const VendorShopDetail = ({ route, navigation }) => {
   const { shop } = route.params;
+
+  const openMap = () => {
+    const lat = shop.coordinates?.latitude || shop.latitude;
+    const lng = shop.coordinates?.longitude || shop.longitude;
+    const label = encodeURIComponent(shop.name || "Shop Location");
+
+    if (!lat || !lng) {
+      alert("Location coordinates not available.");
+      return;
+    }
+
+    const url = Platform.select({
+      ios: `http://maps.apple.com/?ll=${lat},${lng}&q=${label}`,
+      android: `geo:${lat},${lng}?q=${lat},${lng}(${label})`,
+    });
+
+    Linking.openURL(url).catch((err) =>
+      console.error("Failed to open map:", err)
+    );
+  };
 
   return (
     <View style={styles.container}>
       <Header title="Shop Details" navigation={navigation} />
 
       <ScrollView contentContainerStyle={styles.scrollContainer}>
-        {/* Shop Image */}
-        {shop.image && <Image style={styles.image} source={{ uri: shop.image }} />}
+        {/* Shop Images Carousel */}
+        {shop.images && shop.images.length > 0 ? (
+          <ScrollView
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            style={styles.imageCarousel}
+          >
+            {shop.images.map((imgUri, index) => (
+              <Image
+                key={index}
+                style={styles.image}
+                source={{ uri: imgUri }}
+              />
+            ))}
+          </ScrollView>
+        ) : (
+          <View style={[styles.image, styles.placeholderImage]}>
+            <Text style={styles.placeholderText}>No Images</Text>
+          </View>
+        )}
 
         {/* Shop Info */}
         <View style={styles.infoContainer}>
           <Text style={styles.shopName}>{shop.name}</Text>
           <Text style={styles.price}>Category: {shop.category || "N/A"}</Text>
 
-          <Text style={styles.description}>{shop.about || "No description provided."}</Text>
+          <Text style={styles.description}>
+            {shop.about || "No description provided."}
+          </Text>
 
           {shop.location && (
-            <Text style={styles.location}>
-              📍 {shop.location}
-            </Text>
+            <TouchableOpacity onPress={openMap}>
+              <Text style={styles.location}>📍 {shop.location}</Text>
+            </TouchableOpacity>
           )}
         </View>
 
         {/* Edit Button */}
         <TouchableOpacity
-          style={styles.editButton}
-          onPress={() => navigation.navigate("EditShop", { shop })}
+          style={styles.viewButton}
+          onPress={() => navigation.navigate("VendorProducts", { shop })}
         >
-          <Text style={styles.editButtonText}>Edit Shop Details</Text>
+          <Text style={styles.viewButtonText}>View your products</Text>
         </TouchableOpacity>
       </ScrollView>
     </View>
@@ -49,16 +102,24 @@ const styles = StyleSheet.create({
   scrollContainer: {
     padding: 20,
   },
-  image: {
-    width: "100%",
-    aspectRatio: 1.2, 
-    borderRadius: 15,
+  imageCarousel: {
     marginBottom: 20,
+  },
+  image: {
+    width: width - 40,
+    height: 250,
+    borderRadius: 15,
+    marginRight: 15,
     resizeMode: "cover",
-    shadowColor: "#000",
-    shadowOpacity: 0.2,
-    shadowRadius: 10,
-    elevation: 5,
+  },
+  placeholderImage: {
+    backgroundColor: "#eee",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  placeholderText: {
+    color: "#999",
+    fontSize: 16,
   },
   infoContainer: {
     backgroundColor: "#fff",
@@ -94,8 +155,9 @@ const styles = StyleSheet.create({
     color: "#386F4F",
     textAlign: "center",
     fontWeight: "500",
+    textDecorationLine: "underline",
   },
-  editButton: {
+  viewButton: {
     marginTop: 20,
     backgroundColor: "#228B22",
     paddingVertical: 12,
@@ -106,7 +168,7 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     elevation: 3,
   },
-  editButtonText: {
+  viewButtonText: {
     fontSize: 18,
     fontWeight: "bold",
     color: "#fff",

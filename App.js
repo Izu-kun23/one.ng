@@ -25,6 +25,10 @@ import AddShop from "./screens/vendor/AddShop.js";
 import ArchivedShops from "./screens/vendor/ArchivedShops.js";
 import ShopDetail from "./screens/vendor/ShopDetail.js";
 import VendorProfile from "./screens/vendor/VendorProfile.js";
+import VendorLocation from "./screens/vendor/VendorLocation.js";
+import VendorProducts from "./screens/vendor/VendorProducts.js";
+import ProductModal from "./screens/vendor/ProductModal.js";
+import AddProducts from "./screens/vendor/AddProducts.js";
 
 // Navigation Setup
 const Stack = createNativeStackNavigator();
@@ -79,8 +83,6 @@ function VendorDrawer() {
           ),
         }}
       />
-
-      
     </Drawer.Navigator>
   );
 }
@@ -187,9 +189,7 @@ function AppStack() {
         component={EditProfileScreen}
         options={{ title: "Edit Profile" }}
       />
-      <Stack.Screen name="SettingsScreen" 
-      component={SettingsScreen} />
-
+      <Stack.Screen name="SettingsScreen" component={SettingsScreen} />
     </Stack.Navigator>
   );
 }
@@ -255,6 +255,13 @@ function VendorStack() {
         }}
       />
       <Stack.Screen
+        name="AddProducts"
+        component={AddProducts}
+        options={{
+          headerShown: false, // optional, depending on your modal design
+        }}
+      />
+      <Stack.Screen
         name="ArchivedShops"
         component={ArchivedShops} // Wrap VendorHome in Drawer
         options={{
@@ -268,6 +275,29 @@ function VendorStack() {
           headerShown: false, // Disable default header for VendorHome
         }}
       />
+      <Stack.Screen
+        name="VendorLocation"
+        component={VendorLocation} // Wrap VendorHome in Drawer
+        options={{
+          headerShown: false, // Disable default header for VendorHome
+        }}
+      />
+      <Stack.Screen
+        name="VendorProducts"
+        component={VendorProducts} // Wrap VendorHome in Drawer
+        options={{
+          headerShown: false, // Disable default header for VendorHome
+        }}
+      />
+      <Stack.Screen
+        name="ProductModal"
+        component={ProductModal}
+        options={{
+          presentation: "modal",
+          headerShown: false, // optional, depending on your modal design
+        }}
+      />
+
     </Stack.Navigator>
   );
 }
@@ -302,6 +332,7 @@ export default function App() {
           component={VendorStack}
           options={{ headerShown: false }}
         />
+        
       </Stack.Navigator>
     </NavigationContainer>
   );

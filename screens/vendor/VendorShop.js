@@ -39,10 +39,14 @@ const VendorShop = ({ navigation }) => {
         const shopsCollectionRef = collection(Fire.shared.firestore, "shops");
         const q = query(shopsCollectionRef, where("vendorId", "==", vendorId));
         const querySnapshot = await getDocs(q);
-        const fetchedShops = querySnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
+        const fetchedShops = querySnapshot.docs.map((doc) => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            ...data,
+            shopImage: data.images?.[0] || null, // Get only the first image from the 'images' array
+          };
+        });
         setShops(fetchedShops);
       } catch (error) {
         console.error("Error fetching shops:", error);
@@ -55,10 +59,14 @@ const VendorShop = ({ navigation }) => {
 
     const q = query(collection(Fire.shared.firestore, "shops"), where("vendorId", "==", vendorId));
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const updatedShops = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
+      const updatedShops = snapshot.docs.map((doc) => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          shopImage: data.images?.[0] || null, // Real-time update with first image
+        };
+      });
       setShops(updatedShops);
     });
 
@@ -71,10 +79,14 @@ const VendorShop = ({ navigation }) => {
       const shopsCollectionRef = collection(Fire.shared.firestore, "shops");
       const q = query(shopsCollectionRef, where("vendorId", "==", vendorId));
       const querySnapshot = await getDocs(q);
-      const refreshedShops = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
+      const refreshedShops = querySnapshot.docs.map((doc) => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          shopImage: data.images?.[0] || null, // Refresh with first image
+        };
+      });
       setShops(refreshedShops);
     } catch (error) {
       console.error("Error refreshing shops:", error);
@@ -147,10 +159,10 @@ const VendorShop = ({ navigation }) => {
         style={styles.shopCard}
         onPress={() => navigation.navigate("ShopDetail", { shop: item })}
       >
-        {item.image ? (
-          <Image source={{ uri: item.image }} style={styles.shopImage} />
+        {item.shopImage ? (
+          <Image source={{ uri: item.shopImage }} style={styles.shopImage} />
         ) : (
-          <View style={styles.shopImage} />
+          <View style={[styles.shopImage, { backgroundColor: "#eee" }]} />
         )}
 
         <View style={styles.shopInfo}>
@@ -171,7 +183,10 @@ const VendorShop = ({ navigation }) => {
     <GestureHandlerRootView style={styles.container}>
       <Header title="My Shops" navigation={navigation} />
 
-      <TouchableOpacity style={styles.archiveButtonContainer} onPress={() => navigation.navigate("ArchivedShops")}>
+      <TouchableOpacity
+        style={styles.archiveButtonContainer}
+        onPress={() => navigation.navigate("ArchivedShops")}
+      >
         <Text style={styles.archiveButtonText}>📂 View Archived Shops</Text>
       </TouchableOpacity>
 

@@ -1,5 +1,5 @@
 import { getAuth, createUserWithEmailAndPassword, signOut } from "firebase/auth";
-import { getFirestore, doc, setDoc, collection, addDoc, getDoc, deleteDoc, getDocs, } from "firebase/firestore";
+import { getFirestore, doc, setDoc, collection, addDoc, getDoc, deleteDoc, getDocs, query, where  } from "firebase/firestore";
 import { getStorage, ref, uploadBytesResumable, getDownloadURL, deleteObject } from "firebase/storage";
 import { app } from "./firebaseConfig";  // Your Firebase App Config file
 
@@ -16,57 +16,167 @@ class Fire {
   }
 
 
-
-  /**
- * Add a new shop to Firestore
- */
-addShop = async ({ shopName, about, street, city, category, shopImage, vendorName }) => {
-  if (!this.uid) {
-    console.error("🔥 User UID is not available!");
-    return;
-  }
-
-  try {
-    let remoteUri = null;
-
-    // Upload Image if provided
-    if (shopImage) {
-      const imagePath = `shops/${this.uid}/${Date.now()}`;
-      remoteUri = await this.uploadPhotoAsync(shopImage, imagePath);
+  /* --------------------------------------- PRODUCTS DATABASE --------------------------------------- */
+  addProduct = async ({
+    productName,
+    productDesc,
+    price,
+    category,
+    productImages,
+    size,
+    gender,
+    expiryDate,
+    author,
+    brand,
+    stock, // <-- Add stock here
+  }) => {
+    if (!this.uid) {
+      console.error("🔥 User UID is not available!");
+      return;
     }
+  
+    try {
+      const imageUrls = [];
+  
+      // Upload multiple images
+      if (productImages && productImages.length > 0) {
+        for (let i = 0; i < productImages.length; i++) {
+          const imagePath = `products/${this.uid}/${Date.now()}_${i}`;
+          const url = await this.uploadPhotoAsync(productImages[i], imagePath);
+          imageUrls.push(url);
+        }
+      }
+  
+      // Create product document
+      const newProduct = {
+        name: productName,
+        description: productDesc,
+        price,
+        category,
+        stock: Number(stock), // <-- Store as a number
+        images: imageUrls,
+        vendorId: this.uid,
+        createdAt: new Date().toISOString(),
+      };
+  
+      // Add category-specific fields
+      if (category === 'Clothing') {
+        newProduct.size = size;
+        newProduct.gender = gender;
+      } else if (category === 'Food') {
+        newProduct.expiryDate = expiryDate;
+      } else if (category === 'Books and Stationery') {
+        newProduct.author = author;
+      } else if (
+        ['Tech and Gadgets', 'Beauty and Cosmetics', 'Health and Wellness', 'Automotive', 'Home and Living', 'Toys and Games', 'Sports and Fitness']
+          .includes(category)
+      ) {
+        newProduct.brand = brand;
+      }
+  
+      const docRef = await addDoc(collection(this.firestore, "products"), newProduct);
+      console.log("✅ Product added with ID:", docRef.id);
+      return docRef.id;
+  
+    } catch (error) {
+      console.error("❌ Error adding product:", error);
+      throw error;
+    }
+  };
 
-    // Create shop document
-    const newShop = {
-      name: shopName,
-      about,
-      location: `${street}, ${city}`,
-      category,
-      image: remoteUri || null,  // Use uploaded image URL
-      vendor: vendorName || "Anonymous",
-      vendorId: this.uid,  // Store the vendor's UID
-      createdAt: new Date().toISOString(),
-    };
+  getVendorProducts = async (vendorId) => {
+    if (!vendorId) {
+      console.error("❌ Vendor ID is required");
+      return [];
+    }
+  
+    try {
+      // Reference to the products collection
+      const productsCollectionRef = collection(this.firestore, "products");
+  
+      // Query to fetch products where vendorId matches the provided vendorId
+      const q = query(productsCollectionRef, where("vendorId", "==", vendorId));
+  
+      // Fetch the filtered products from the collection
+      const productSnapshot = await getDocs(q);
+  
+      // Map through the documents and extract product data
+      const productList = productSnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+  
+      return productList;
+    } catch (error) {
+      console.error("❌ Error fetching products for vendor:", error);
+      return [];
+    }
+  };
 
-    // Save shop data in Firestore
-    const docRef = await addDoc(collection(this.firestore, "shops"), newShop);
 
-    console.log("✅ Shop added with ID:", docRef.id);
-    return docRef.id; // Return shop ID
-  } catch (error) {
-    console.error("❌ Error adding shop:", error);
-    throw error;
-  }
+  /* --------------------------------------- SHOPS DATABASE --------------------------------------- */
+
+  addShop = async ({
+    shopName,
+    about,
+    street,
+    city,
+    category,
+    shopImages,
+    vendorName,
+    isOpen,
+  }) => {
+    if (!this.uid) {
+      console.error("🔥 User UID is not available!");
+      return;
+    }
+  
+    try {
+      const imageUrls = [];
+  
+      // Upload multiple images
+      if (shopImages && shopImages.length > 0) {
+        for (let i = 0; i < shopImages.length; i++) {
+          const imagePath = `shops/${this.uid}/${Date.now()}_${i}`;
+          const url = await this.uploadPhotoAsync(shopImages[i], imagePath);
+          imageUrls.push(url);
+        }
+      }
+  
+      // Create shop document
+      const newShop = {
+        name: shopName,
+        about,
+        location: `${street}, ${city}`,
+        category,
+        images: imageUrls, // Store array of image URLs
+        vendor: vendorName || "Anonymous",
+        vendorId: this.uid,
+        isOpen: isOpen ?? true, // Default to true if undefined
+        createdAt: new Date().toISOString(),
+      };
+  
+      const docRef = await addDoc(collection(this.firestore, "shops"), newShop);
+      console.log("✅ Shop added with ID:", docRef.id);
+      return docRef.id;
+    } catch (error) {
+      console.error("❌ Error adding shop:", error);
+      throw error;
+    }
 };
 
-getShops = async () => {
+ getShops = async () => {
   try {
     // Reference to the shops collection
     const shopsCollectionRef = collection(Fire.shared.firestore, "shops");
 
-    // Fetch documents from the shops collection (✅ use getDocs, not getDoc)
-    const shopSnapshot = await getDocs(shopsCollectionRef);
+    // Query to fetch shops where vendorId matches the current vendor
+    const q = query(shopsCollectionRef, where("vendorId", "==", Fire.shared.uid));
 
-    // Map through the documents and get data
+    // Fetch the filtered documents from the shops collection
+    const shopSnapshot = await getDocs(q);
+
+    // Map through the documents and get the data
     const shopsList = shopSnapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
@@ -78,6 +188,7 @@ getShops = async () => {
     return [];
   }
 };
+
 deleteShop = async (shopId, shopImage) => {
   if (!shopId) {
     console.error("❌ Shop ID is required for deletion!");
