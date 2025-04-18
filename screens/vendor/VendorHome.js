@@ -1,220 +1,233 @@
-import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from "react-native";
-import { doc, onSnapshot } from "firebase/firestore";
-import Fire from "../../Fire";
-import Header from "../../components/Header";
-import { LinearGradient } from "expo-linear-gradient";
-import { Ionicons } from "@expo/vector-icons";
-import NotificationCard from "../../components/NotificationCard"; // Import Notification Card
+import React, { useState, useEffect } from 'react';
+import {
+  StyleSheet,
+  Text,
+  View,
+  ScrollView,
+  TouchableOpacity,
+  Dimensions,
+  RefreshControl,
+} from 'react-native';
+import * as Animatable from 'react-native-animatable';
+import { LineChart } from 'react-native-chart-kit';
+import Header from '../../components/Header';
+import Fire from '../../Fire';
 
-export default class VendorHome extends React.Component {
-  state = {
-    vendor: {},
-    showAllNotifications: false, // State to toggle notifications
+const screenWidth = Dimensions.get('window').width;
+
+const weeklyData = {
+  labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+  datasets: [{ data: [4000, 5000, 4500, 6000, 7000, 4800, 5300] }],
+};
+
+const monthlyData = {
+  labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May'],
+  datasets: [{ data: [12000, 18000, 15000, 20000, 17000] }],
+};
+
+const VendorHome = () => {
+  const [chartData, setChartData] = useState(weeklyData);
+  const [viewMode, setViewMode] = useState('Weekly');
+  const [refreshing, setRefreshing] = useState(false);
+  const [animationKey, setAnimationKey] = useState(Date.now());
+  const [avatar, setAvatar] = useState(null);
+  const [vendorName, setVendorName] = useState('');
+  const [notifications, setNotifications] = useState([]);
+
+  const toggleView = () => {
+    if (viewMode === 'Weekly') {
+      setChartData(monthlyData);
+      setViewMode('Monthly');
+    } else {
+      setChartData(weeklyData);
+      setViewMode('Weekly');
+    }
   };
 
-  unsubscribe = null;
+  const onRefresh = () => {
+    setRefreshing(true);
+    setTimeout(() => {
+      setRefreshing(false);
+      setAnimationKey(Date.now());
+      fetchData();
+    }, 1500);
+  };
 
-  componentDidMount() {
-    const vendorId = this.props.uid || Fire.shared.uid;
+  const fetchData = async () => {
+    const uid = Fire.shared.uid;
+    if (!uid) return;
 
-    if (!vendorId) {
-      console.error("🔥 Vendor ID is undefined!");
-      return;
-    }
-
-    const vendorRef = doc(Fire.shared.firestore, "vendors", vendorId);
-
-    this.unsubscribe = onSnapshot(vendorRef, (docSnap) => {
-      if (docSnap.exists()) {
-        this.setState({ vendor: docSnap.data() });
-      } else {
-        console.log("🚨 No such vendor in Firestore!");
+    try {
+      const vendorData = await Fire.shared.getVendorData(uid);
+      if (vendorData) {
+        setAvatar(vendorData.avatar);
+        setVendorName(vendorData.name || '');
       }
-    });
-  }
 
-  componentWillUnmount() {
-    if (this.unsubscribe) {
-      this.unsubscribe();
+      const notifData = await Fire.shared.getVendorNotifications(uid);
+
+      const enriched = await Promise.all(
+        notifData.map(async (notif) => {
+          const userData = await Fire.shared.getUserData(notif.userId);
+          let itemName = '';
+
+          if (notif.type === 'shop') {
+            const shopDoc = await Fire.shared.getShopById(notif.itemId);
+            itemName = shopDoc?.name || 'a shop';
+          } else if (notif.type === 'product') {
+            const productDoc = await Fire.shared.getProductById(notif.itemId);
+            itemName = productDoc?.name || 'a product';
+          }
+
+          return {
+            ...notif,
+            userName: userData?.name || 'Someone',
+            itemName,
+          };
+        })
+      );
+
+      setNotifications(enriched.reverse());
+    } catch (err) {
+      console.error('❌ Failed to fetch vendor data or notifications:', err);
     }
-  }
-
-  handleLogout = () => {
-    Fire.shared.signOut();
-    this.setState({ vendor: {} });
-    this.props.navigation.navigate("VendorLogin");
   };
 
-  toggleNotifications = () => {
-    this.setState((prevState) => ({
-      showAllNotifications: !prevState.showAllNotifications,
-    }));
-  };
+  useEffect(() => {
+    fetchData();
+  }, []);
 
-  render() {
-    const { vendor, showAllNotifications } = this.state;
-    const { navigation } = this.props;
+  return (
+    <View style={styles.container}>
+      <Header title="Overview" avatar={avatar} name={vendorName} />
+      <ScrollView
+        contentContainerStyle={{ paddingBottom: 20 }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      >
+        <Animatable.View
+          key={animationKey}
+          animation="fadeInUp"
+          duration={600}
+          useNativeDriver
+        >
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.cardRow}>
+            {[
+              { title: 'Total Sales', value: '₦150,000' },
+              { title: 'Orders', value: '320' },
+              { title: 'Pending Orders', value: '15' },
+              { title: 'Products', value: '57' },
+            ].map((item, index) => (
+              <View key={index} style={styles.card}>
+                <Text style={styles.cardTitle}>{item.title}</Text>
+                <Text style={styles.cardValue}>{item.value}</Text>
+              </View>
+            ))}
+          </ScrollView>
 
-    const analytics = {
-      customers: 120,
-      sales: 5000,
-      messages: 35,
-      earnings: 1200,
-    };
-
-    // Sample Notifications
-    const notifications = [
-      { title: "New Order Received", message: "You have a new order from John Doe.", time: "2 mins ago", icon: "cart" },
-      { title: "Payment Received", message: "You received $50 from Sarah.", time: "1 hour ago", icon: "wallet" },
-      { title: "Delivery Scheduled", message: "Your order is out for delivery.", time: "3 hours ago", icon: "bicycle" },
-      { title: "New Review", message: "Someone left a review on your store.", time: "Yesterday", icon: "star" },
-    ];
-
-    // Show only 2 by default
-    const displayedNotifications = showAllNotifications ? notifications : notifications.slice(0, 2);
-
-    return (
-      <LinearGradient colors={["#F2F2F2", "#F2F2F2"]} style={styles.container}>
-        {/* Header */}
-        <Header title="" navigation={navigation} avatar={vendor.avatar} />
-
-        {/* Greeting Section */}
-        <View style={styles.greetingContainer}>
-          <Text style={styles.greetingText}>
-            Welcome Back, {vendor.name || "Vendor"}!
-          </Text>
-        </View>
-
-        {/* Analytics Cards */}
-        <View style={styles.cardsContainer}>
-          <View style={styles.cardRow}>
-            <View style={styles.card}>
-              <Ionicons name="people" size={30} color="#386F4F" />
-              <Text style={styles.cardTitle}>Customers</Text>
-              <Text style={styles.cardValue}>{analytics.customers}</Text>
-            </View>
-            <View style={styles.card}>
-              <Ionicons name="analytics" size={30} color="#386F4F" />
-              <Text style={styles.cardTitle}>Statistics</Text>
-              <Text style={styles.cardValue}>${analytics.sales}</Text>
-            </View>
-          </View>
-
-          <View style={styles.cardRow}>
-            <View style={styles.card}>
-              <Ionicons name="pricetags" size={30} color="#386F4F" />
-              <Text style={styles.cardTitle}>Businesses</Text>
-              <Text style={styles.cardValue}>{analytics.messages}</Text>
-            </View>
-            <View style={styles.card}>
-              <Ionicons name="alert-outline" size={30} color="red" />
-              <Text style={styles.cardTitle}>Requests</Text>
-              <Text style={styles.cardValue}>${analytics.earnings}</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Notifications Section */}
-        <View style={styles.notificationsHeader}>
-          <Text style={styles.notificationsTitle}>Notifications</Text>
-          {notifications.length > 2 && (
-            <TouchableOpacity onPress={this.toggleNotifications}>
-              <Text style={styles.viewAllText}>
-                {showAllNotifications ? "View Less" : "View All"}
+          <View style={styles.toggleContainer}>
+            <TouchableOpacity onPress={toggleView} style={styles.toggleButton}>
+              <Text style={styles.toggleText}>
+                Switch to {viewMode === 'Weekly' ? 'Monthly' : 'Weekly'} View
               </Text>
             </TouchableOpacity>
-          )}
-        </View>
+          </View>
 
-        <ScrollView contentContainerStyle={styles.scrollViewContent}>
-          {displayedNotifications.map((notif, index) => (
-            <NotificationCard
-              key={index}
-              title={notif.title}
-              message={notif.message}
-              time={notif.time}
-              icon={notif.icon}
-            />
-          ))}
-        </ScrollView>
-      </LinearGradient>
-    );
-  }
-}
+          <Text style={styles.sectionTitle}>Sales Overview ({viewMode})</Text>
+          <LineChart
+            data={chartData}
+            width={screenWidth - 32}
+            height={220}
+            fromZero
+            chartConfig={{
+              backgroundColor: '#ffffff',
+              backgroundGradientFrom: '#fff',
+              backgroundGradientTo: '#fff',
+              decimalPlaces: 0,
+              color: (opacity = 1) => `rgba(34, 139, 34, ${opacity})`,
+              labelColor: () => '#000',
+              propsForDots: {
+                r: '5',
+                strokeWidth: '2',
+                stroke: '#228B22',
+              },
+            }}
+            bezier
+            style={styles.chart}
+          />
+
+          <Text style={styles.sectionTitle}>Notifications</Text>
+          {notifications.length === 0 ? (
+            <Text style={styles.emptyText}>You have no notifications yet.</Text>
+          ) : (
+            notifications.map((note) => (
+              <View key={note.id} style={styles.notification}>
+                <Text style={styles.notificationText}>
+                  {note.userName} favorited your {note.type}{' '}
+                  <Text style={{ fontWeight: 'bold' }}>{note.itemName}</Text>
+                </Text>
+                <Text style={styles.notificationTime}>
+                  {new Date(note.createdAt).toLocaleString()}
+                </Text>
+              </View>
+            ))
+          )}
+        </Animatable.View>
+      </ScrollView>
+    </View>
+  );
+};
+
+export default VendorHome;
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 20,
-  },
-  greetingContainer: {
-    marginTop: 20,
-    alignItems: "center",
-  },
-  greetingText: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#333",
-  },
-  cardsContainer: {
-    marginTop: 30,
-    alignItems: "center",
-  },
-  cardRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    width: "100%",
-    marginBottom: 20,
-  },
+  container: { flex: 1, backgroundColor: '#F9F9F9' },
+  cardRow: { flexDirection: 'row', paddingHorizontal: 16, marginTop: 16 },
   card: {
-    backgroundColor: "#FFF",
+    backgroundColor: '#fff',
+    padding: 20,
     borderRadius: 12,
-    elevation: 3,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    padding: 15,
-    width: "45%",
-    height: 120,
-    justifyContent: "center",
-    alignItems: "center",
+    marginRight: 16,
+    elevation: 2,
+    width: 180,
   },
-  cardTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#333",
+  cardTitle: { fontSize: 14, color: '#555', marginBottom: 6 },
+  cardValue: { fontSize: 20, fontWeight: 'bold', color: '#228B22' },
+  toggleContainer: {
+    alignItems: 'flex-end',
+    paddingHorizontal: 16,
+    marginTop: 8,
   },
-  cardValue: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#3498db",
-    marginTop: 5,
+  toggleButton: {
+    backgroundColor: '#E0F5E9',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 8,
   },
-  notificationsHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginTop: 10,
-    height: 45,
-  },
-  notificationsTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#333",
-  },
-  viewAllText: {
+  toggleText: { color: '#228B22', fontSize: 14, fontWeight: '500' },
+  sectionTitle: {
     fontSize: 16,
-    color: "#3498db",
-    fontWeight: "bold",
+    fontWeight: '600',
+    color: '#333',
+    marginTop: 24,
+    marginBottom: 12,
+    paddingHorizontal: 16,
   },
-  viewLessText: {
-    fontSize: 16,
-    color: "red", // This ensures the "View Less" text is red
-    fontWeight: "bold",
+  chart: { borderRadius: 12, marginHorizontal: 16 },
+  notification: {
+    backgroundColor: '#fff',
+    padding: 16,
+    marginHorizontal: 16,
+    marginBottom: 10,
+    borderRadius: 10,
+    elevation: 1,
   },
-  scrollViewContent: {
-    flexGrow: 1,
+  notificationText: { color: '#333', fontSize: 14 },
+  notificationTime: { fontSize: 11, color: '#999', marginTop: 4 },
+  emptyText: {
+    textAlign: 'center',
+    color: '#888',
+    fontSize: 14,
+    paddingHorizontal: 16,
+    marginBottom: 10,
   },
 });

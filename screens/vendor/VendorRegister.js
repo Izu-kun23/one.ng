@@ -15,8 +15,8 @@ import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { getFirestore, doc, setDoc } from "firebase/firestore";
 import * as ImagePicker from "expo-image-picker";
 import { Ionicons } from "@expo/vector-icons";
-import Fire from "../../Fire"; 
-import loadingImage from "../../assets/loading.png"; // Loading image
+import Fire from "../../Fire";
+import loadingImage from "../../assets/loading.png";
 
 export default class VendorRegister extends React.Component {
   state = {
@@ -24,22 +24,30 @@ export default class VendorRegister extends React.Component {
       name: "",
       email: "",
       password: "",
+      confirmPassword: "",
       avatar: null,
     },
     errorMessage: null,
     isLoading: false,
+    showPassword: false,
+    showConfirmPassword: false,
   };
 
   handleSignUp = async () => {
-    const { name, email, password, avatar } = this.state.vendor;
+    const { name, email, password, confirmPassword, avatar } = this.state.vendor;
 
-    if (!name || !email || !password) {
+    if (!name || !email || !password || !confirmPassword) {
       this.setState({ errorMessage: "All fields are required!" });
       return;
     }
 
     if (password.length < 6) {
       this.setState({ errorMessage: "Password must be at least 6 characters!" });
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      this.setState({ errorMessage: "Passwords do not match!" });
       return;
     }
 
@@ -89,91 +97,103 @@ export default class VendorRegister extends React.Component {
   };
 
   render() {
+    const { vendor, errorMessage, isLoading, showPassword, showConfirmPassword } = this.state;
+
     return (
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <View style={styles.container}>
-          <StatusBar barStyle="light-content" />
+          <StatusBar barStyle="dark-content" backgroundColor="#f8f8f8" />
 
-          {/* Green Header */}
-          <View style={styles.greetingCard}>
-            <Text style={styles.greetingText}>Become a Vendor Today!</Text>
-          </View>
+          <Text style={styles.title}>Create your vendor account</Text>
 
-          {/* Error Message */}
-          {this.state.errorMessage && (
-            <Text style={styles.errorText}>{this.state.errorMessage}</Text>
-          )}
+          {errorMessage && <Text style={styles.errorText}>{errorMessage}</Text>}
 
-          {/* Avatar Picker */}
-          <View style={styles.avatarContainer}>
-            <TouchableOpacity
-              style={styles.avatarPlaceholder}
-              onPress={this.handlePickAvatar}
-            >
-              {this.state.vendor.avatar ? (
-                <Image source={{ uri: this.state.vendor.avatar }} style={styles.avatar} />
-              ) : (
-                <Ionicons name="camera" size={40} color="#FFF" />
-              )}
-            </TouchableOpacity>
-          </View>
+          {/* Avatar */}
+          <TouchableOpacity style={styles.avatarPlaceholder} onPress={this.handlePickAvatar}>
+            {vendor.avatar ? (
+              <Image source={{ uri: vendor.avatar }} style={styles.avatar} />
+            ) : (
+              <Ionicons name="camera" size={36} color="#888" />
+            )}
+          </TouchableOpacity>
 
-          {/* Input Form */}
+          {/* Form */}
           <View style={styles.form}>
-            <View>
-              <Text style={styles.inputTitle}>Full Name</Text>
-              <TextInput
-                style={styles.input}
-                autoCapitalize="words"
-                onChangeText={(name) =>
-                  this.setState({ vendor: { ...this.state.vendor, name } })
-                }
-                value={this.state.vendor.name}
-              />
-            </View>
+            <Text style={styles.inputTitle}>Full Name</Text>
+            <TextInput
+              style={styles.input}
+              autoCapitalize="words"
+              value={vendor.name}
+              onChangeText={(name) =>
+                this.setState({ vendor: { ...vendor, name } })
+              }
+            />
 
-            <View style={{ marginTop: 20 }}>
-              <Text style={styles.inputTitle}>Email Address</Text>
-              <TextInput
-                style={styles.input}
-                autoCapitalize="none"
-                keyboardType="email-address"
-                onChangeText={(email) =>
-                  this.setState({ vendor: { ...this.state.vendor, email } })
-                }
-                value={this.state.vendor.email}
-              />
-            </View>
+            <Text style={[styles.inputTitle, { marginTop: 20 }]}>Email Address</Text>
+            <TextInput
+              style={styles.input}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              value={vendor.email}
+              onChangeText={(email) =>
+                this.setState({ vendor: { ...vendor, email } })
+              }
+            />
 
-            <View style={{ marginTop: 20 }}>
-              <Text style={styles.inputTitle}>Password</Text>
+            {/* Password */}
+            <Text style={[styles.inputTitle, { marginTop: 20 }]}>Password</Text>
+            <View style={styles.passwordWrapper}>
               <TextInput
                 style={styles.input}
-                secureTextEntry
+                secureTextEntry={!showPassword}
                 autoCapitalize="none"
+                value={vendor.password}
                 onChangeText={(password) =>
-                  this.setState({ vendor: { ...this.state.vendor, password } })
+                  this.setState({ vendor: { ...vendor, password } })
                 }
-                value={this.state.vendor.password}
               />
+              <TouchableOpacity
+                style={styles.eyeIcon}
+                onPress={() => this.setState({ showPassword: !showPassword })}
+              >
+                <Ionicons name={showPassword ? "eye" : "eye-off"} size={20} color="#386F4F" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Confirm Password */}
+            <Text style={[styles.inputTitle, { marginTop: 20 }]}>Confirm Password</Text>
+            <View style={styles.passwordWrapper}>
+              <TextInput
+                style={styles.input}
+                secureTextEntry={!showConfirmPassword}
+                autoCapitalize="none"
+                value={vendor.confirmPassword}
+                onChangeText={(confirmPassword) =>
+                  this.setState({ vendor: { ...vendor, confirmPassword } })
+                }
+              />
+              <TouchableOpacity
+                style={styles.eyeIcon}
+                onPress={() => this.setState({ showConfirmPassword: !showConfirmPassword })}
+              >
+                <Ionicons name={showConfirmPassword ? "eye" : "eye-off"} size={20} color="#386F4F" />
+              </TouchableOpacity>
             </View>
           </View>
 
-          {/* Sign Up Button */}
-          <TouchableOpacity style={styles.button} onPress={this.handleSignUp} disabled={this.state.isLoading}>
-            <Text style={{ color: "#FFF", fontWeight: "500" }}>
-              {this.state.isLoading ? "Signing Up..." : "Sign Up"}
+          <TouchableOpacity style={styles.button} onPress={this.handleSignUp} disabled={isLoading}>
+            <Text style={{ color: "#FFF", fontWeight: "600" }}>
+              {isLoading ? "Signing up..." : "Sign Up"}
             </Text>
           </TouchableOpacity>
 
-          {/* Navigate to Login */}
-          <TouchableOpacity style={{ alignSelf: "center", marginTop: 15 }} onPress={() => this.props.navigation.navigate("VendorLogin")}>
-            <Text style={{ color: "#414959", fontSize: 13 }}>
-              Already have an account? <Text style={{ fontWeight: "500", color: "#386F4F" }}>Login</Text>
+          <TouchableOpacity style={{ marginTop: 15 }} onPress={() => this.props.navigation.navigate("VendorLogin")}>
+            <Text style={{ fontSize: 13, color: "#444" }}>
+              Already have an account?{" "}
+              <Text style={{ color: "#386F4F", fontWeight: "500" }}>Login</Text>
             </Text>
           </TouchableOpacity>
 
-          {/* Loading Image */}
           <Image source={loadingImage} style={styles.loadingImage} />
         </View>
       </TouchableWithoutFeedback>
@@ -184,83 +204,78 @@ export default class VendorRegister extends React.Component {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    paddingHorizontal: 35,
+    paddingTop: 75,
     alignItems: "center",
-    padding: 20,
     backgroundColor: "#f8f8f8",
   },
-  greetingCard: {
-    width: "110%",
-    height: "34%",
-    backgroundColor: "#386F4F",
-    borderBottomLeftRadius: 65,
-    borderBottomRightRadius: 65,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingTop: 30,
-    position: "absolute",
-    top: 0,
-  },
-  greetingText: {
-    fontSize: 36,
+  title: {
+    fontSize: 24,
     fontWeight: "bold",
-    color: "#fff",
+    color: "#386F4F",
+    marginBottom: 20,
     textAlign: "center",
   },
   errorText: {
-    marginTop: "35%",
     color: "red",
     fontSize: 14,
-    fontWeight: "500",
-  },
-  avatarContainer: {
-    alignSelf: "center",
-    marginTop: 230,
-    zIndex: 10,
+    marginBottom: 10,
   },
   avatarPlaceholder: {
     width: 100,
     height: 100,
-    backgroundColor: "#E1E2E6",
     borderRadius: 50,
+    backgroundColor: "#E1E2E6",
     justifyContent: "center",
     alignItems: "center",
+    marginBottom: 30,
   },
   avatar: {
-    position: "absolute",
     width: 100,
     height: 100,
     borderRadius: 50,
   },
   form: {
-    width: "80%",
-    marginTop: 50,
+    width: "100%",
+    marginBottom: 30,
   },
   inputTitle: {
-    color: "#8A8F9E",
     fontSize: 12,
+    color: "#8A8F9E",
     textTransform: "uppercase",
     marginBottom: 5,
   },
   input: {
-    borderBottomColor: "#8A8F9E",
     borderBottomWidth: 1,
+    borderBottomColor: "#ccc",
     height: 40,
     fontSize: 16,
     color: "#161F3D",
+    paddingRight: 30,
+  },
+  passwordWrapper: {
+    position: "relative",
+    justifyContent: "center",
+  },
+  eyeIcon: {
+    position: "absolute",
+    right: 0,
+    bottom: 10,
+    padding: 5,
   },
   button: {
-    width: "60%",
     backgroundColor: "#386F4F",
     borderRadius: 8,
     height: 50,
-    alignItems: "center",
+    width: "70%",
     justifyContent: "center",
-    marginTop: 60,
+    alignItems: "center",
+    marginTop: 10,
   },
   loadingImage: {
-    width: 150,
-    height: 110,
-    marginTop: 20,
+    width: 120,
+    height: 150,
+    marginTop: 70,
+    resizeMode: "contain",
   },
 });
-

@@ -83,7 +83,7 @@ const VendorShopDetail = ({ route, navigation }) => {
         {/* Edit Button */}
         <TouchableOpacity
           style={styles.viewButton}
-          onPress={() => navigation.navigate("VendorProducts", { shop })}
+          onPress={() => navigation.navigate("VendorProducts", { shopId: shop.id })}
         >
           <Text style={styles.viewButtonText}>View your products</Text>
         </TouchableOpacity>

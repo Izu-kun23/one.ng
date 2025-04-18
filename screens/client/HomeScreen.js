@@ -1,233 +1,305 @@
-import React, { useState } from "react";
-import { View, Text, StyleSheet, Image, FlatList, TextInput, TouchableOpacity, ScrollView } from "react-native";
+import React, { useEffect, useState } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  ScrollView,
+  Alert,
+  Image,
+  TouchableOpacity,
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
+import Fire from "../../Fire";
+import { collection, getDocs } from "firebase/firestore";
+import Header4 from "../../components/Header4";
 
-// Temporary Vendor Data
-const vendors = [
-    { id: "1", name: "Joe's Coffee", category: "Coffee", description: "The best coffee in town!", location: "123 Main St, NY", image: require("../../assets/tempImage1.jpg") },
-    { id: "2", name: "Fresh Bites", category: "Food", description: "Organic and healthy meals!", location: "456 Oak St, LA", image: require("../../assets/tempImage2.jpg") },
-    { id: "3", name: "Tech Haven", category: "Gadgets", description: "Gadgets and accessories.", location: "789 Silicon Ave, SF", image: require("../../assets/tempImage3.jpg") },
+const categories = [
+  "All",
+  "Clothing",
+  "Food",
+  "Books and Stationery",
+  "Tech and Gadgets",
+  "Beauty and Cosmetics",
+  "Health and Wellness",
+  "Automotive",
+  "Home and Living",
+  "Toys and Games",
+  "Sports and Fitness",
 ];
 
-// Categories
-const categories = ["All", "Food", "Clothing", "Coffee", "Tech"];
-
 export default function HomeScreen() {
-    const [searchText, setSearchText] = useState("");
-    const [selectedCategory, setSelectedCategory] = useState("All");
-    const [filteredVendors, setFilteredVendors] = useState(vendors);
-    const navigation = useNavigation();
+  const [searchText, setSearchText] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [shops, setShops] = useState([]);
+  const [products, setProducts] = useState([]);
+  const [savedShops, setSavedShops] = useState(new Set());
+  const [savedProducts, setSavedProducts] = useState(new Set());
+  const navigation = useNavigation();
 
-    // Handle Search
-    const handleSearch = (text) => {
-        setSearchText(text);
-        filterVendors(text, selectedCategory);
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const shopSnapshot = await getDocs(collection(Fire.shared.firestore, "shops"));
+        const productSnapshot = await getDocs(collection(Fire.shared.firestore, "products"));
+
+        const shopList = shopSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const productList = productSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        setShops(shopList);
+        setProducts(productList);
+      } catch (err) {
+        console.log("❌ Error fetching data:", err);
+      }
     };
 
-    // Handle Category Selection
-    const handleCategorySelect = (category) => {
-        setSelectedCategory(category);
-        filterVendors(searchText, category);
+    const fetchSavedFavorites = async () => {
+      try {
+        const shopFavs = await Fire.shared.getFavoritesByType("shop");
+        const productFavs = await Fire.shared.getFavoritesByType("product");
+        setSavedShops(new Set(shopFavs.map(fav => fav.itemId)));
+        setSavedProducts(new Set(productFavs.map(fav => fav.itemId)));
+      } catch (err) {
+        console.error("❌ Error fetching saved favorites:", err);
+      }
     };
 
-    // Filter Vendors based on Search and Category
-    const filterVendors = (text, category) => {
-        let updatedVendors = vendors;
-        if (category !== "All") {
-            updatedVendors = updatedVendors.filter(vendor => vendor.category === category);
-        }
-        if (text.trim() !== "") {
-            updatedVendors = updatedVendors.filter(vendor => vendor.name.toLowerCase().includes(text.toLowerCase()));
-        }
-        setFilteredVendors(updatedVendors);
-    };
+    fetchData();
+    fetchSavedFavorites();
+  }, []);
 
-    return (
-        <View style={styles.container}>
-            {/* Header with Search Bar */}
-            <View style={styles.header}>
-                <Text style={styles.headerTitle}>Discover</Text>
-                <View style={styles.searchContainer}>
-                    <Ionicons name="search-outline" size={20} color="#999" style={styles.searchIcon} />
-                    <TextInput
-                        style={styles.searchInput}
-                        placeholder="Search Vendors..."
-                        value={searchText}
-                        onChangeText={handleSearch}
-                    />
-                    {searchText.length > 0 && (
-                        <TouchableOpacity onPress={() => handleSearch("")}>
-                            <Ionicons name="close-circle-outline" size={20} color="#999" style={styles.clearIcon} />
-                        </TouchableOpacity>
-                    )}
-                    <TouchableOpacity>
-                        <Ionicons name="location-outline" size={22} color="#333" style={styles.locationIcon} />
-                    </TouchableOpacity>
+  const handleCategorySelect = (category) => setSelectedCategory(category);
+
+  const toggleSaveShop = async (shopId, vendorId) => {
+    const isFavorited = savedShops.has(shopId);
+    try {
+      if (isFavorited) {
+        await Fire.shared.removeFavorite({ itemId: shopId, type: "shop" });
+        Alert.alert("Removed", "Shop removed from favorites.");
+      } else {
+        await Fire.shared.addFavorite({ itemId: shopId, vendorId, type: "shop" });
+        Alert.alert("Saved", "Shop added to favorites!");
+      }
+
+      setSavedShops(prev => {
+        const updated = new Set(prev);
+        isFavorited ? updated.delete(shopId) : updated.add(shopId);
+        return updated;
+      });
+    } catch (err) {
+      console.log("Error toggling shop favorite:", err);
+    }
+  };
+
+  const toggleSaveProduct = async (productId, vendorId) => {
+    const isFavorited = savedProducts.has(productId);
+    try {
+      if (isFavorited) {
+        await Fire.shared.removeFavorite({ itemId: productId, type: "product" });
+        Alert.alert("Removed", "Product removed from favorites.");
+      } else {
+        await Fire.shared.addFavorite({ itemId: productId, vendorId, type: "product" });
+        Alert.alert("Saved", "Product added to favorites!");
+      }
+
+      setSavedProducts(prev => {
+        const updated = new Set(prev);
+        isFavorited ? updated.delete(productId) : updated.add(productId);
+        return updated;
+      });
+    } catch (err) {
+      console.log("Error toggling product favorite:", err);
+    }
+  };
+
+  const filteredShops = shops.filter(
+    (shop) =>
+      (selectedCategory === "All" || shop.category === selectedCategory) &&
+      shop.name.toLowerCase().includes(searchText.toLowerCase())
+  );
+
+  const filteredProducts = products.filter(
+    (product) =>
+      (selectedCategory === "All" || product.category === selectedCategory) &&
+      product.name.toLowerCase().includes(searchText.toLowerCase())
+  );
+
+  const defaultVendorImage = "https://via.placeholder.com/300x200.png?text=Vendor";
+  const defaultProductImage = "https://via.placeholder.com/200x200.png?text=Product";
+
+  return (
+    <View style={styles.container}>
+      <Header4 searchText={searchText} setSearchText={setSearchText} />
+
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        {/* Categories */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryContainer}>
+          {categories.map((category, index) => (
+            <TouchableOpacity
+              key={index}
+              style={[
+                styles.categoryBox,
+                selectedCategory === category && styles.categoryBoxSelected,
+              ]}
+              onPress={() => handleCategorySelect(category)}
+            >
+              <Text
+                style={[
+                  styles.categoryText,
+                  selectedCategory === category && styles.categoryTextSelected,
+                ]}
+              >
+                {category}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+
+        {/* Shops */}
+        <Text style={styles.sectionTitle}>Shops</Text>
+        <FlatList
+          data={filteredShops}
+          horizontal
+          keyExtractor={(item) => item.id}
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ paddingHorizontal: 16 }}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              style={[styles.vendorCard, { width: 250, marginRight: 10 }]}
+              onPress={() => navigation.navigate("VendorDetail", { vendor: item })}
+            >
+              <Image source={{ uri: item.images?.[0] || defaultVendorImage }} style={styles.vendorImage} />
+              <TouchableOpacity style={styles.saveIcon} onPress={() => toggleSaveShop(item.id, item.vendorId)}>
+                <Ionicons
+                  name={savedShops.has(item.id) ? "bookmark" : "bookmark-outline"}
+                  size={22}
+                  color={savedShops.has(item.id) ? "#386F4F" : "#888"}
+                />
+              </TouchableOpacity>
+              <View style={styles.vendorInfo}>
+                <Text style={styles.vendorName}>{item.name}</Text>
+                <View style={styles.statusRow}>
+                  <Text
+                    style={[
+                      styles.statusBadge,
+                      { backgroundColor: item.isOpen ? "#4CAF50" : "#D32F2F" },
+                    ]}
+                  >
+                    {item.isOpen ? "Open" : "Closed"}
+                  </Text>
                 </View>
-            </View>
+                <Text style={styles.vendorDescription}>{item.about}</Text>
+              </View>
+            </TouchableOpacity>
+          )}
+        />
 
-            {/* Category Filter */}
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryContainer}>
-                {categories.map((category, index) => (
-                    <TouchableOpacity
-                        key={index}
-                        style={[
-                            styles.categoryBox,
-                            selectedCategory === category && styles.categoryBoxSelected,
-                        ]}
-                        onPress={() => handleCategorySelect(category)}
-                    >
-                        <Text style={[
-                            styles.categoryText,
-                            selectedCategory === category && styles.categoryTextSelected,
-                        ]}>
-                            {category}
-                        </Text>
-                    </TouchableOpacity>
-                ))}
-            </ScrollView>
-
-            {/* Vendor Feed */}
-            <FlatList
-                data={filteredVendors}
-                keyExtractor={(item) => item.id}
-                renderItem={({ item }) => (
-                    <TouchableOpacity style={styles.vendorCard} onPress={() => navigation.navigate("VendorDetail", { vendor: item })}>
-                        <Image source={item.image} style={styles.vendorImage} />
-                        <View style={styles.vendorInfo}>
-                            <Text style={styles.vendorName}>{item.name}</Text>
-                            <Text style={styles.vendorDescription}>{item.description}</Text>
-                            <View style={styles.locationContainer}>
-                                <Ionicons name="location-outline" size={18} color="#888" />
-                                <Text style={styles.vendorLocation}>{item.location}</Text>
-                            </View>
-                        </View>
-                    </TouchableOpacity>
-                )}
-                showsVerticalScrollIndicator={false}
-            />
-        </View>
-    );
+        {/* Products */}
+        <Text style={styles.sectionTitle}>Products</Text>
+        <FlatList
+          data={filteredProducts}
+          horizontal
+          keyExtractor={(item) => item.id}
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 30 }}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              style={[styles.vendorCard, { width: 180, marginRight: 10 }]}
+              onPress={() => navigation.navigate("ProductDetail", { product: item })}
+            >
+              <Image source={{ uri: item.images?.[0] || defaultProductImage }} style={{ width: "100%", height: 150 }} />
+              <TouchableOpacity style={styles.saveIcon} onPress={() => toggleSaveProduct(item.id, item.vendorId)}>
+                <Ionicons
+                  name={savedProducts.has(item.id) ? "heart" : "heart-outline"}
+                  size={20}
+                  color={savedProducts.has(item.id) ? "#D1495B" : "#888"}
+                />
+              </TouchableOpacity>
+              <View style={styles.vendorInfo}>
+                <Text style={styles.vendorName}>{item.name}</Text>
+                <Text style={styles.vendorDescription}>₦{item.price}</Text>
+              </View>
+            </TouchableOpacity>
+          )}
+        />
+      </ScrollView>
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: "#F5F5F5",
-    },
-    header: {
-        paddingTop: 64,
-        paddingBottom: 20,
-        backgroundColor: "#386F4F",
-        alignItems: "center",
-        justifyContent: "center",
-        borderBottomWidth: 1,
-        borderBottomColor: "#EBECF4",
-    },
-    headerTitle: {
-        fontSize: 22,
-        fontWeight: "bold",
-        color: "#FFF",
-    },
-    searchContainer: {
-        flexDirection: "row",
-        backgroundColor: "#FFF",
-        borderRadius: 25,
-        paddingVertical: 12,
-        paddingHorizontal: 15,
-        marginTop: 10,
-        width: "90%",
-        alignItems: "center",
-        elevation: 2,
-    },
-    searchIcon: {
-        marginRight: 8,
-    },
-    searchInput: {
-        flex: 1,
-        fontSize: 16,
-        color: "#333",
-    },
-    clearIcon: {
-        marginLeft: 8,
-    },
-    locationIcon: {
-        marginLeft: 8,
-    },
-    categoryContainer: {
-        flexDirection: "row",
-        alignContent: "center",
-        paddingVertical: 7,
-        paddingHorizontal: 16,
-        paddingBottom: 40,
-
-
-    },
-    categoryBox: {
-        backgroundColor: "#FFF",
-        paddingVertical: 10,
-        paddingHorizontal: 10,
-        borderRadius: 15,
-        marginRight: 8,
-        borderWidth: 2,
-        borderColor: "#D8D9DB",
-        alignItems: "center",
-        justifyContent: "center",
-        minWidth: 70,  // Ensures a consistent width
-        height: 40,     // Keeps the height the same for all categories
-        position: "relative",
-    },
-    
-    categoryBoxSelected: {
-        backgroundColor: "#386F4F",
-        borderColor: "#386F4F",
-    },
-    categoryText: {
-        fontSize: 13,
-        color: "#333",
-        textAlign: "center",
-    },
-    
-    categoryTextSelected: {
-        color: "#FFF",
-        fontWeight: "bold",
-    },
-    vendorCard: {
-        backgroundColor: "#FFF",
-        borderRadius: 10,
-        marginHorizontal: 16,
-        marginVertical: 10, // Increased margin for more space between vendor items
-        overflow: "hidden",
-        elevation: 3,
-        justifyContent: "space-between",
-    },
-    vendorImage: {
-        width: "100%",
-        height: 200,
-    },
-    vendorInfo: {
-        padding: 15,
-    },
-    vendorName: {
-        fontSize: 18,
-        fontWeight: "bold",
-        color: "#333",
-    },
-    vendorDescription: {
-        fontSize: 14,
-        color: "#666",
-        marginVertical: 5,
-    },
-    locationContainer: {
-        flexDirection: "row",
-        alignItems: "center",
-        marginTop: 5,
-    },
-    vendorLocation: {
-        fontSize: 14,
-        color: "#888",
-        marginLeft: 5,
-    },
+  container: { flex: 1, backgroundColor: "#F5F5F5" },
+  scrollContent: { paddingTop: 10, paddingBottom: 20 },
+  categoryContainer: {
+    flexDirection: "row",
+    paddingVertical: 7,
+    paddingHorizontal: 16,
+    paddingBottom: 20,
+  },
+  categoryBox: {
+    backgroundColor: "#FFF",
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    borderRadius: 15,
+    marginRight: 8,
+    borderWidth: 2,
+    borderColor: "#D8D9DB",
+    minWidth: 70,
+    height: 40,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  categoryBoxSelected: {
+    backgroundColor: "#386F4F",
+    borderColor: "#386F4F",
+  },
+  categoryText: { fontSize: 13, color: "#333", textAlign: "center" },
+  categoryTextSelected: { color: "#FFF", fontWeight: "bold" },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginTop: 8,
+    marginLeft: 16,
+    marginBottom: 6,
+    color: "#333",
+  },
+  vendorCard: {
+    backgroundColor: "#FFF",
+    borderRadius: 10,
+    overflow: "hidden",
+    elevation: 3,
+    height: 257,
+    paddingBottom: 2,
+    marginBottom: 10,
+  },
+  vendorImage: { width: "100%", height: 150 },
+  vendorInfo: { padding: 10 },
+  vendorName: { fontSize: 16, fontWeight: "bold", color: "#333" },
+  vendorDescription: { fontSize: 14, color: "#555", marginTop: 2 },
+  saveIcon: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    zIndex: 10,
+    backgroundColor: "#fff",
+    borderRadius: 20,
+    padding: 4,
+    elevation: 3,
+  },
+  statusRow: {
+    marginTop: 6,
+    marginBottom: 4,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  statusBadge: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "bold",
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 12,
+    alignSelf: "flex-start",
+  },
 });
-

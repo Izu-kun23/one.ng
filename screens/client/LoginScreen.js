@@ -7,10 +7,11 @@ import {
   TouchableOpacity,
   Image,
   StatusBar,
-  LayoutAnimation
+  LayoutAnimation,
 } from "react-native";
-import { auth } from "../../firebaseConfig"; 
+import { auth } from "../../firebaseConfig";
 import { signInWithEmailAndPassword } from "firebase/auth";
+import { Ionicons } from "@expo/vector-icons"; // for eye icon
 
 export default class LoginScreen extends React.Component {
   static navigationOptions = {
@@ -21,6 +22,7 @@ export default class LoginScreen extends React.Component {
     email: "",
     password: "",
     errorMessage: null,
+    secureTextEntry: true,
   };
 
   handleLogin = async () => {
@@ -35,43 +37,52 @@ export default class LoginScreen extends React.Component {
 
   render() {
     LayoutAnimation.easeInEaseOut();
+    const { email, password, secureTextEntry, errorMessage } = this.state;
+
     return (
       <View style={styles.container}>
-        <StatusBar barStyle="light-content" />
+        <StatusBar barStyle="dark-content" backgroundColor="#f8f8f8" />
 
-        {/* Green Curved Greeting Card */}
-        <View style={styles.greetingCard}>
-          <Text style={styles.greetingText}>Welcome back, ready to shop?</Text>
-        </View>
+        {/* Title */}
+        <Text style={styles.title}>Login to OneNG</Text>
 
         {/* Error Message */}
-        <View style={styles.errorMessage}>
-          {this.state.errorMessage && (
-            <Text style={{ color: "red" }}>{this.state.errorMessage}</Text>
-          )}
-        </View>
+        {errorMessage && (
+          <Text style={styles.errorMessage}>{errorMessage}</Text>
+        )}
 
-        {/* Input Form - Fixed Positioning */}
+        {/* Form */}
         <View style={styles.form}>
-          <View>
-            <Text style={styles.inputTitle}>Email Address</Text>
-            <TextInput
-              style={styles.input}
-              autoCapitalize="none"
-              onChangeText={(email) => this.setState({ email })}
-              value={this.state.email}
-            />
-          </View>
+          <Text style={styles.inputTitle}>Email Address</Text>
+          <TextInput
+            style={styles.input}
+            autoCapitalize="none"
+            keyboardType="email-address"
+            value={email}
+            onChangeText={(email) => this.setState({ email })}
+          />
 
-          <View style={{ marginTop: 20 }}>
-            <Text style={styles.inputTitle}>Password</Text>
+          <Text style={[styles.inputTitle, { marginTop: 20 }]}>Password</Text>
+          <View style={styles.passwordWrapper}>
             <TextInput
               style={styles.input}
-              secureTextEntry
+              secureTextEntry={secureTextEntry}
               autoCapitalize="none"
+              value={password}
               onChangeText={(password) => this.setState({ password })}
-              value={this.state.password}
             />
+            <TouchableOpacity
+              onPress={() =>
+                this.setState({ secureTextEntry: !secureTextEntry })
+              }
+              style={styles.eyeIcon}
+            >
+              <Ionicons
+                name={secureTextEntry ? "eye-off" : "eye"}
+                size={20}
+                color="#386F4F"
+              />
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -80,10 +91,10 @@ export default class LoginScreen extends React.Component {
           <Text style={{ color: "#FFF", fontWeight: "500" }}>Sign in</Text>
         </TouchableOpacity>
 
-        {/* Sign Up Link */}
-        <TouchableOpacity 
+        {/* Sign Up */}
+        <TouchableOpacity
           style={{ alignSelf: "center", marginTop: 15 }}
-          onPress={() => this.props.navigation.navigate('Register')}
+          onPress={() => this.props.navigation.navigate("Register")}
         >
           <Text style={{ color: "#414959", fontSize: 13 }}>
             New to OneNG?{" "}
@@ -91,10 +102,10 @@ export default class LoginScreen extends React.Component {
           </Text>
         </TouchableOpacity>
 
-        {/* Loading Image at Bottom */}
-        <Image 
-          source={require("../../assets/loading.png")} 
-          style={styles.loadingImage} 
+        {/* Loading Image */}
+        <Image
+          source={require("../../assets/loading.png")}
+          style={styles.loadingImage}
         />
       </View>
     );
@@ -108,61 +119,60 @@ const styles = StyleSheet.create({
     padding: 20,
     backgroundColor: "#f8f8f8",
   },
-  greetingCard: {
-    width: "110%",
-    height: "40%", // Reduced height to fix form spacing
-    backgroundColor: "#386F4F", 
-    borderBottomLeftRadius: 65, 
-    borderBottomRightRadius: 65, 
-    justifyContent: "center",
-    alignItems: "center",
-    paddingTop: 40, // Ensures text is visible
-    position: "absolute",
-    top: 0, 
-  },
-  greetingText: {
-    fontSize: 46,
+  title: {
+    fontSize: 27,
     fontWeight: "bold",
-    color: "#fff",
+    color: "#386F4F",
+    marginTop: 90,
     textAlign: "center",
   },
   errorMessage: {
-    marginTop: "35%", // Moves below the greeting card
-    height: 50,
-    alignItems: "center",
-    justifyContent: "center",
+    color: "red",
+    fontSize: 14,
+    marginTop: 20,
+    textAlign: "center",
   },
   form: {
-    width: "80%",
-    marginTop: 240, // Moves form up closer to the card
+    width: "85%",
+    marginTop: 48,
   },
   inputTitle: {
-    color: "#8A8F9E",
     fontSize: 12,
+    color: "#8A8F9E",
     textTransform: "uppercase",
     marginBottom: 5,
   },
   input: {
-    borderBottomColor: "#8A8F9E",
     borderBottomWidth: 1,
-    height: 40,
+    borderBottomColor: "#ccc",
+    height: 55,
     fontSize: 16,
     color: "#161F3D",
-    marginBottom: 15,
+    paddingRight: 30,
+  },
+  passwordWrapper: {
+    position: "relative",
+    justifyContent: "center",
+  },
+  eyeIcon: {
+    position: "absolute",
+    right: 0,
+    bottom: 12,
+    padding: 8,
   },
   button: {
-    width: "45%",
+    width: "55%",
     backgroundColor: "#386F4F",
     borderRadius: 8,
     height: 50,
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 25,
+    marginTop: 65,
   },
   loadingImage: {
-    width: 150,
-    height: 150,
+    width: 140,
+    height: 590,
     resizeMode: "contain",
-    marginTop: 25,
+    marginTop: 40,
   },
 });

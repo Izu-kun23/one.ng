@@ -1,183 +1,164 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, FlatList, ActivityIndicator, Image, TextInput } from "react-native";
+import {
+  View,
+  StyleSheet,
+  FlatList,
+  ActivityIndicator,
+  Image,
+  Text,
+  Dimensions,
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { getFirestore, collection, query, onSnapshot, orderBy } from "firebase/firestore";
+import {
+  getFirestore,
+  collection,
+  query,
+  onSnapshot,
+  orderBy,
+} from "firebase/firestore";
 import moment from "moment";
-import { app } from "../../firebaseConfig"; // Import Firebase config
+import { app } from "../../firebaseConfig";
+import Header4 from "../../components/Header4";
 
-const firestore = getFirestore(app); // Initialize Firestore
+const firestore = getFirestore(app);
+const { width } = Dimensions.get("window");
 
 export default function FeedScreen() {
-    const [posts, setPosts] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [searchQuery, setSearchQuery] = useState("");
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchText, setSearchText] = useState("");
 
-    useEffect(() => {
-        const q = query(collection(firestore, "posts"), orderBy("timestamp", "desc"));
+  useEffect(() => {
+    const q = query(collection(firestore, "posts"), orderBy("timestamp", "desc"));
 
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            const fetchedPosts = snapshot.docs.map((doc) => ({
-                id: doc.id,
-                ...doc.data(),
-            }));
-            setPosts(fetchedPosts);
-            setLoading(false);
-        }, (error) => {
-            console.error("❌ Error fetching posts:", error);
-            setLoading(false);
-        });
-
-        return () => unsubscribe(); // Cleanup listener on unmount
-    }, []);
-
-    // Filter posts based on the search query
-    const filteredPosts = posts.filter(post =>
-        post.text.toLowerCase().includes(searchQuery.toLowerCase())
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        const fetchedPosts = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setPosts(fetchedPosts);
+        setLoading(false);
+      },
+      (error) => {
+        console.error("❌ Error fetching posts:", error);
+        setLoading(false);
+      }
     );
 
-    const renderPost = ({ item }) => (
-        <View style={styles.feedItem}>
-            <Image source={{ uri: item.avatar }} style={styles.avatar} />
-            <View style={{ flex: 1 }}>
-                <View style={styles.postHeader}>
-                    <View>
-                        <Text style={styles.name}>{item.name}</Text>
-                        <Text style={styles.timestamp}>{moment(item.timestamp).fromNow()}</Text>
-                    </View>
-                    <Ionicons name="ellipsis-horizontal-outline" size={24} color="#73788B" />
-                </View>
-                <Text style={styles.post}>{item.text}</Text>
-                {item.image && <Image source={{ uri: item.image }} style={styles.postImage} resizeMode="cover" />}
-                <View style={styles.likeContainer}>
-                    <Ionicons name="heart-outline" size={20} color="#73788B" />
-                    <Text style={styles.likeCount}>0</Text>
-                </View>
-            </View>
+    return () => unsubscribe();
+  }, []);
+
+  const filteredPosts = posts.filter((post) =>
+    post.text?.toLowerCase().includes(searchText.toLowerCase())
+  );
+
+  const renderPost = ({ item }) => (
+    <View style={styles.card}>
+      <View style={styles.cardHeader}>
+        <Image source={{ uri: item.avatar }} style={styles.avatar} />
+        <View style={{ flex: 1 }}>
+          <Text style={styles.name}>{item.name}</Text>
+          <Text style={styles.timestamp}>{moment(item.timestamp).fromNow()}</Text>
         </View>
-    );
+        <Ionicons name="ellipsis-vertical" size={20} color="#aaa" />
+      </View>
 
-    return (
-        <View style={styles.container}>
-            {/* Header with Feed Title and Search Bar */}
-            <View style={styles.header}>
-                <Text style={styles.headerTitle}>Feed</Text>
-                <View style={styles.searchContainer}>
-                    <Ionicons name="search" size={24} color="#73788B" style={styles.searchIcon} />
-                    <TextInput
-                        style={styles.searchInput}
-                        placeholder="Search posts..."
-                        value={searchQuery}
-                        onChangeText={setSearchQuery}
-                    />
-                </View>
-            </View>
+      <Text style={styles.reviewText}>{item.text}</Text>
 
-            {/* Feed Content */}
-            {loading ? (
-                <ActivityIndicator size="large" color="#E71D69" />
-            ) : (
-                <FlatList
-                    data={filteredPosts}
-                    renderItem={renderPost}
-                    keyExtractor={(item) => item.id}
-                    contentContainerStyle={styles.feedContainer}
-                />
-            )}
-        </View>
-    );
+      {item.image && (
+        <Image source={{ uri: item.image }} style={styles.reviewImage} />
+      )}
+
+      <View style={styles.reactions}>
+        <Ionicons name="heart-outline" size={20} color="#73788B" />
+        <Text style={styles.likeText}>0 Likes</Text>
+      </View>
+    </View>
+  );
+
+  return (
+    <View style={styles.container}>
+      <Header4 searchText={searchText} setSearchText={setSearchText} />
+
+      {loading ? (
+        <ActivityIndicator size="large" color="#E71D69" style={{ marginTop: 20 }} />
+      ) : (
+        <FlatList
+          data={filteredPosts}
+          renderItem={renderPost}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.feedContainer}
+          showsVerticalScrollIndicator={false}
+        />
+      )}
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: "#F5F5F5",
-    },
-    header: {
-        paddingTop: 64,
-        paddingBottom: 20,
-        backgroundColor: "#FFF",
-        alignItems: "center",
-        justifyContent: "center",
-        borderBottomWidth: 1,
-        borderBottomColor: "#EBECF4",
-    },
-    headerTitle: {
-        fontSize: 22,
-        fontWeight: "bold",
-        color: "#FFF",
-    },
-    searchContainer: {
-        flexDirection: "row",
-        backgroundColor: "#F5F5F5",
-        borderRadius: 25,
-        paddingVertical: 13,
-        paddingHorizontal: 15,
-        marginTop: 10,
-        width: "90%",
-        alignItems: "center",
-        elevation: 2,
-    },
-    searchIcon: {
-        marginRight: 8,
-    },
-    searchInput: {
-        flex: 1,
-        fontSize: 16,
-        color: "#333",
-    },
-    feedContainer: {
-        paddingHorizontal: 16,
-        paddingBottom: 16,
-    },
-    feedItem: {
-        flexDirection: "row",
-        padding: 16,
-        borderBottomWidth: 1,
-        borderBottomColor: "#D8D9DB",
-        backgroundColor: "#FAFAFA",
-        borderRadius: 10,
-        marginBottom: 16,
-        alignItems: "flex-start", // Ensures proper alignment of text and avatar
-    },
-    avatar: {
-        width: 50,
-        height: 50,
-        borderRadius: 25,
-        marginRight: 16,
-    },
-    postHeader: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-    },
-    name: {
-        fontWeight: "bold",
-        fontSize: 16,
-        color: "#333",
-    },
-    timestamp: {
-        fontSize: 12,
-        color: "#73788B",
-    },
-    post: {
-        fontSize: 16,
-        marginVertical: 8,
-        color: "#444",
-    },
-    postImage: {
-        width: "100%",
-        height: 200,
-        borderRadius: 8,
-        marginVertical: 8,
-    },
-    likeContainer: {
-        flexDirection: "row",
-        alignItems: "center",
-        marginTop: 8,
-    },
-    likeCount: {
-        marginLeft: 8,
-        fontSize: 14,
-        color: "#73788B",
-    },
+  container: {
+    flex: 1,
+    backgroundColor: "#F1F1F1",
+  },
+  feedContainer: {
+    padding: 16,
+  },
+  card: {
+    backgroundColor: "#FFF",
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    elevation: 3,
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 2 },
+  },
+  cardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  avatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    marginRight: 12,
+  },
+  name: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#333",
+  },
+  timestamp: {
+    fontSize: 12,
+    color: "#888",
+    marginTop: 2,
+  },
+  reviewText: {
+    fontSize: 15,
+    color: "#444",
+    marginVertical: 10,
+    lineHeight: 22,
+  },
+  reviewImage: {
+    width: width - 64,
+    height: 200,
+    borderRadius: 10,
+    resizeMode: "cover",
+    marginVertical: 10,
+    alignSelf: "center",
+  },
+  reactions: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 6,
+  },
+  likeText: {
+    fontSize: 14,
+    color: "#73788B",
+    marginLeft: 8,
+  },
 });

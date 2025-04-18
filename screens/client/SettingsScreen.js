@@ -1,12 +1,23 @@
 import React from "react";
-import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Image,
+  TouchableOpacity,
+  ScrollView,
+  Switch,
+} from "react-native";
 import { doc, onSnapshot } from "firebase/firestore";
 import Fire from "../../Fire";
-import Ionicons from "react-native-vector-icons/Ionicons";  // Import Ionicons
+import Ionicons from "react-native-vector-icons/Ionicons";
+import Header4 from "../../components/Header4";
 
 export default class SettingsScreen extends React.Component {
   state = {
     user: {},
+    isDarkTheme: false,
+    notificationsEnabled: true,
   };
 
   unsubscribe = null;
@@ -42,10 +53,23 @@ export default class SettingsScreen extends React.Component {
     this.props.navigation.navigate("Auth");
   };
 
+  toggleTheme = () => {
+    this.setState((prev) => ({ isDarkTheme: !prev.isDarkTheme }));
+  };
+
+  toggleNotifications = () => {
+    this.setState((prev) => ({
+      notificationsEnabled: !prev.notificationsEnabled,
+    }));
+  };
+
   render() {
-    const { user } = this.state;
+    const { user, isDarkTheme, notificationsEnabled } = this.state;
 
     return (
+      <View style={{ flex: 1 }}>
+      <Header4 />
+
       <ScrollView style={styles.container}>
         {/* User Profile Section */}
         <View style={styles.profileHeader}>
@@ -62,26 +86,38 @@ export default class SettingsScreen extends React.Component {
           <Text style={styles.name}>{user.name || "User Name"}</Text>
 
           {/* Edit Profile Button */}
-          <TouchableOpacity style={styles.editProfileButton} onPress={() => this.props.navigation.navigate("EditProfile")}>
+          <TouchableOpacity
+            style={styles.editProfileButton}
+            onPress={() => this.props.navigation.navigate("EditProfile")}
+          >
             <Text style={styles.editProfileText}>Edit Profile</Text>
           </TouchableOpacity>
         </View>
 
         {/* Cards Section */}
         <View style={styles.cardContainer}>
-          {/* First Card: History & Reminders */}
+        
+
+          {/* Preferences */}
           <View style={styles.card}>
-            <TouchableOpacity style={styles.cardItem}>
-              <Ionicons name="time-outline" size={20} color="#333" style={styles.icon} />
-              <Text style={styles.cardText}>History</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.cardItem, styles.lastCardItem]}>
-              <Ionicons name="notifications-outline" size={20} color="#333" style={styles.icon} />
-              <Text style={styles.cardText}>Reminders</Text>
-            </TouchableOpacity>
+            <View style={styles.cardItem}>
+              <Ionicons name="moon-outline" size={20} color="#333" style={styles.icon} />
+              <Text style={styles.cardText}>Dark Theme</Text>
+              <View style={{ flex: 1 }} />
+              <Switch value={isDarkTheme} onValueChange={this.toggleTheme} />
+            </View>
+            <View style={styles.cardItem}>
+              <Ionicons name="notifications-circle-outline" size={20} color="#333" style={styles.icon} />
+              <Text style={styles.cardText}>Push Notifications</Text>
+              <View style={{ flex: 1 }} />
+              <Switch
+                value={notificationsEnabled}
+                onValueChange={this.toggleNotifications}
+              />
+            </View>
           </View>
 
-          {/* Second Card: Privacy, Terms, Delete Account */}
+          {/* Legal */}
           <View style={styles.card}>
             <TouchableOpacity style={styles.cardItem}>
               <Ionicons name="shield-checkmark-outline" size={20} color="#333" style={styles.icon} />
@@ -101,7 +137,7 @@ export default class SettingsScreen extends React.Component {
         {/* Bottom Buttons */}
         <TouchableOpacity
           style={styles.vendorButton}
-          onPress={() => this.props.navigation.navigate("Vendor")}  // Navigate to Vendor Login screen
+          onPress={() => this.props.navigation.navigate("Vendor")}
         >
           <Ionicons name="briefcase-outline" size={20} color="black" style={styles.icon} />
           <Text style={styles.vendorText}>Switch to Vendor</Text>
@@ -112,6 +148,7 @@ export default class SettingsScreen extends React.Component {
           <Text style={styles.logoutButtonText}>Log Out</Text>
         </TouchableOpacity>
       </ScrollView>
+      </View>
     );
   }
 }
@@ -119,21 +156,19 @@ export default class SettingsScreen extends React.Component {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f9f9f9",
+    backgroundColor: "#fff",
   },
   profileHeader: {
-    marginTop: 64,
+    marginTop: 2,
     alignItems: "center",
     backgroundColor: "#fff",
-    paddingVertical: 30,
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
+    paddingVertical: 25,
   },
   avatarContainer: {
     shadowColor: "#151734",
     shadowRadius: 30,
     shadowOpacity: 0.4,
-    marginBottom: 15,
+    marginBottom: 1,
   },
   avatar: {
     width: 136,
@@ -160,7 +195,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   cardContainer: {
-    marginTop: 30,
+    marginTop: 10,
     paddingHorizontal: 20,
   },
   card: {
@@ -183,7 +218,7 @@ const styles = StyleSheet.create({
     borderBottomColor: "#eee",
   },
   lastCardItem: {
-    borderBottomWidth: 0, // Remove border for last item
+    borderBottomWidth: 0,
   },
   icon: {
     marginRight: 10,
@@ -200,8 +235,8 @@ const styles = StyleSheet.create({
   vendorButton: {
     flexDirection: "row",
     backgroundColor: "#FFF",
-    paddingVertical: 13,
-    marginTop: 20,
+    paddingVertical: 11,
+    marginTop: 10,
     marginHorizontal: 130,
     borderRadius: 10,
     alignItems: "center",

@@ -7,48 +7,67 @@ import {
   Switch,
   TouchableOpacity,
   ScrollView,
+  RefreshControl,
+  Modal,
+  Pressable,
 } from "react-native";
 import Header from "../../components/Header2";
 import Fire from "../../Fire";
 import { onSnapshot, collection, query, where } from "firebase/firestore";
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import Ionicons from "react-native-vector-icons/Ionicons";
 
 const VendorProfile = ({ navigation }) => {
   const [vendor, setVendor] = useState(null);
   const [shopCount, setShopCount] = useState(0);
   const [darkMode, setDarkMode] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
 
-  // Fetch vendor data and shops
+  const fetchVendorData = async () => {
+    const uid = Fire.shared.uid;
+    if (!uid) return;
+
+    const vendorData = await Fire.shared.getVendorData(uid);
+    setVendor(vendorData);
+
+    const unsubscribe = onSnapshot(
+      query(
+        collection(Fire.shared.firestore, "shops"),
+        where("vendorId", "==", uid)
+      ),
+      (snapshot) => {
+        setShopCount(snapshot.docs.length);
+      },
+      (error) => {
+        console.error("Error listening for shops:", error);
+      }
+    );
+
+    return () => unsubscribe();
+  };
+
   useEffect(() => {
-    const fetchVendorData = async () => {
-      const uid = Fire.shared.uid;
-      if (!uid) return;
-
-      // Fetch vendor data
-      const vendorData = await Fire.shared.getVendorData(uid);
-      setVendor(vendorData);
-
-      // Real-time listener for shops
-      const unsubscribe = onSnapshot(
-        query(
-          collection(Fire.shared.firestore, "shops"),
-          where("vendorId", "==", uid)
-        ),
-        (snapshot) => {
-          setShopCount(snapshot.docs.length);
-        },
-        (error) => {
-          console.error("Error listening for shops:", error);
-        }
-      );
-
-      return () => unsubscribe();
-    };
-
     fetchVendorData();
   }, []);
 
-  // Logout function
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      const uid = Fire.shared.uid;
+      if (uid) {
+        const vendorData = await Fire.shared.getVendorData(uid);
+        setVendor(vendorData);
+
+        const snapshot = await Fire.shared.getShops();
+        setShopCount(snapshot.length);
+      }
+    } catch (error) {
+      console.error("Error refreshing profile:", error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   const handleLogout = () => {
     if (Fire.shared.signOut) {
       Fire.shared.signOut();
@@ -61,11 +80,42 @@ const VendorProfile = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <Header title="Settings" navigation={navigation} />
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor="#386F4F"
+          />
+        }
+      >
         {/* Profile */}
         <View style={styles.profileSection}>
           {vendor?.avatar ? (
-            <Image source={{ uri: vendor.avatar }} style={styles.avatar} />
+            <>
+              <TouchableOpacity onPress={() => setModalVisible(true)}>
+                <Image source={{ uri: vendor.avatar }} style={styles.avatar} />
+              </TouchableOpacity>
+              <Modal
+                visible={modalVisible}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => setModalVisible(false)}
+              >
+                <Pressable
+                  style={styles.modalOverlay}
+                  onPress={() => setModalVisible(false)}
+                >
+                  <View style={styles.fullImageContainer}>
+                    <Image
+                      source={{ uri: vendor.avatar }}
+                      style={styles.fullImage}
+                    />
+                  </View>
+                </Pressable>
+              </Modal>
+            </>
           ) : (
             <View style={styles.placeholderAvatar}>
               <Text style={styles.avatarInitial}>
@@ -108,7 +158,7 @@ const VendorProfile = ({ navigation }) => {
         {/* Edit Profile */}
         <TouchableOpacity
           style={styles.editBtn}
-          onPress={() => navigation.navigate("EditProfile")}
+          onPress={() => navigation.navigate("VendorEditProfile")}
         >
           <Text style={styles.editText}>Edit Profile</Text>
         </TouchableOpacity>
@@ -253,5 +303,26 @@ const styles = StyleSheet.create({
     color: "#ff0000",
     fontSize: 16,
     fontWeight: "bold",
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.85)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  fullImageContainer: {
+    width: 300,
+    height: 300,
+    borderRadius: 150, // Half of width/height
+    overflow: "hidden",
+    backgroundColor: "#000",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  fullImage: {
+    width: "100%",
+    height: "100%",
+    borderRadius: 150, // Match container
+    resizeMode: "cover",
   },
 });

@@ -1,7 +1,29 @@
-import { getAuth, createUserWithEmailAndPassword, signOut } from "firebase/auth";
-import { getFirestore, doc, setDoc, collection, addDoc, getDoc, deleteDoc, getDocs, query, where  } from "firebase/firestore";
-import { getStorage, ref, uploadBytesResumable, getDownloadURL, deleteObject } from "firebase/storage";
-import { app } from "./firebaseConfig";  // Your Firebase App Config file
+import {
+  getAuth,
+  createUserWithEmailAndPassword,
+  signOut,
+} from "firebase/auth";
+import {
+  getFirestore,
+  doc,
+  setDoc,
+  collection,
+  addDoc,
+  getDoc,
+  deleteDoc,
+  getDocs,
+  updateDoc,
+  query,
+  where,
+} from "firebase/firestore";
+import {
+  getStorage,
+  ref,
+  uploadBytesResumable,
+  getDownloadURL,
+  deleteObject,
+} from "firebase/storage";
+import { app } from "./firebaseConfig";
 
 // Initialize Firebase services
 const auth = getAuth(app);
@@ -10,11 +32,10 @@ const storage = getStorage(app);
 
 class Fire {
   constructor() {
-    this.auth = auth;         // ✅ Attach auth instance
-    this.firestore = firestore;  // ✅ Attach firestore instance
-    this.storage = storage;      // ✅ Attach storage instance
+    this.auth = auth;
+    this.firestore = firestore;
+    this.storage = storage;
   }
-
 
   /* --------------------------------------- PRODUCTS DATABASE --------------------------------------- */
   addProduct = async ({
@@ -28,17 +49,17 @@ class Fire {
     expiryDate,
     author,
     brand,
-    stock, // <-- Add stock here
+    stock,
+    shopId, // ✅ New addition
   }) => {
     if (!this.uid) {
       console.error("🔥 User UID is not available!");
       return;
     }
-  
+
     try {
       const imageUrls = [];
-  
-      // Upload multiple images
+
       if (productImages && productImages.length > 0) {
         for (let i = 0; i < productImages.length; i++) {
           const imagePath = `products/${this.uid}/${Date.now()}_${i}`;
@@ -46,61 +67,71 @@ class Fire {
           imageUrls.push(url);
         }
       }
-  
-      // Create product document
+
       const newProduct = {
         name: productName,
         description: productDesc,
         price,
         category,
-        stock: Number(stock), // <-- Store as a number
+        stock: Number(stock),
         images: imageUrls,
         vendorId: this.uid,
+        shopId, // ✅ Attach shopId to each product
         createdAt: new Date().toISOString(),
       };
-  
-      // Add category-specific fields
-      if (category === 'Clothing') {
+
+      if (category === "Clothing") {
         newProduct.size = size;
         newProduct.gender = gender;
-      } else if (category === 'Food') {
+      } else if (category === "Food") {
         newProduct.expiryDate = expiryDate;
-      } else if (category === 'Books and Stationery') {
+      } else if (category === "Books and Stationery") {
         newProduct.author = author;
       } else if (
-        ['Tech and Gadgets', 'Beauty and Cosmetics', 'Health and Wellness', 'Automotive', 'Home and Living', 'Toys and Games', 'Sports and Fitness']
-          .includes(category)
+        [
+          "Tech and Gadgets",
+          "Beauty and Cosmetics",
+          "Health and Wellness",
+          "Automotive",
+          "Home and Living",
+          "Toys and Games",
+          "Sports and Fitness",
+        ].includes(category)
       ) {
         newProduct.brand = brand;
       }
-  
-      const docRef = await addDoc(collection(this.firestore, "products"), newProduct);
+
+      const docRef = await addDoc(
+        collection(this.firestore, "products"),
+        newProduct
+      );
       console.log("✅ Product added with ID:", docRef.id);
       return docRef.id;
-  
     } catch (error) {
       console.error("❌ Error adding product:", error);
       throw error;
     }
   };
 
-  getVendorProducts = async (vendorId) => {
-    if (!vendorId) {
-      console.error("❌ Vendor ID is required");
+  
+
+  getVendorProducts = async (vendorId, shopId) => {
+    if (!vendorId || !shopId) {
+      console.error("❌ Both Vendor ID and Shop ID are required");
       return [];
     }
   
     try {
-      // Reference to the products collection
       const productsCollectionRef = collection(this.firestore, "products");
   
-      // Query to fetch products where vendorId matches the provided vendorId
-      const q = query(productsCollectionRef, where("vendorId", "==", vendorId));
+      const q = query(
+        productsCollectionRef,
+        where("vendorId", "==", vendorId),
+        where("shopId", "==", shopId)
+      );
   
-      // Fetch the filtered products from the collection
       const productSnapshot = await getDocs(q);
   
-      // Map through the documents and extract product data
       const productList = productSnapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
@@ -113,6 +144,37 @@ class Fire {
     }
   };
 
+   getProducts = async (shopId) => {
+    if (!shopId) {
+      console.error("❌ Shop ID is required");
+      return [];
+    }
+  
+    try {
+      const productsCollectionRef = collection(Fire.shared.firestore, "products");
+  
+      // Query products by shopId
+      const q = query(
+        productsCollectionRef,
+        where("shopId", "==", shopId)
+      );
+  
+      // Fetch the products
+      const productSnapshot = await getDocs(q);
+  
+      // Map the product data to a list
+      const productList = productSnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+  
+      return productList;
+    } catch (error) {
+      console.error("❌ Error fetching products:", error);
+      return [];
+    }
+  };
+  
 
   /* --------------------------------------- SHOPS DATABASE --------------------------------------- */
 
@@ -134,7 +196,6 @@ class Fire {
     try {
       const imageUrls = [];
   
-      // Upload multiple images
       if (shopImages && shopImages.length > 0) {
         for (let i = 0; i < shopImages.length; i++) {
           const imagePath = `shops/${this.uid}/${Date.now()}_${i}`;
@@ -143,81 +204,90 @@ class Fire {
         }
       }
   
-      // Create shop document
       const newShop = {
         name: shopName,
         about,
         location: `${street}, ${city}`,
         category,
-        images: imageUrls, // Store array of image URLs
+        images: imageUrls,
         vendor: vendorName || "Anonymous",
         vendorId: this.uid,
-        isOpen: isOpen ?? true, // Default to true if undefined
+        isOpen: isOpen ?? true,
         createdAt: new Date().toISOString(),
       };
   
       const docRef = await addDoc(collection(this.firestore, "shops"), newShop);
+  
+      // ✅ Add the shopId field to the document itself
+      await updateDoc(docRef, { shopId: docRef.id });
+  
       console.log("✅ Shop added with ID:", docRef.id);
       return docRef.id;
     } catch (error) {
       console.error("❌ Error adding shop:", error);
       throw error;
     }
-};
+  };
 
- getShops = async () => {
-  try {
-    // Reference to the shops collection
-    const shopsCollectionRef = collection(Fire.shared.firestore, "shops");
+  getShops = async () => {
+    try {
+      const shopsCollectionRef = collection(Fire.shared.firestore, "shops");
+      const q = query(shopsCollectionRef, where("vendorId", "==", Fire.shared.uid));
+      const shopSnapshot = await getDocs(q);
 
-    // Query to fetch shops where vendorId matches the current vendor
-    const q = query(shopsCollectionRef, where("vendorId", "==", Fire.shared.uid));
+      return shopSnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+    } catch (error) {
+      console.error("Error fetching shops:", error);
+      return [];
+    }
+  };
 
-    // Fetch the filtered documents from the shops collection
-    const shopSnapshot = await getDocs(q);
+  getShopIdForCurrentUser = async () => {
+    try {
+      const shopQuery = query(
+        collection(this.firestore, "shops"),
+        where("vendorId", "==", this.uid)
+      );
+      const snapshot = await getDocs(shopQuery);
+      if (!snapshot.empty) {
+        return snapshot.docs[0].id; // returns the first shop found
+      } else {
+        console.warn("No shop found for this user.");
+        return null;
+      }
+    } catch (error) {
+      console.error("Error fetching shop ID:", error);
+      return null;
+    }
+  };
 
-    // Map through the documents and get the data
-    const shopsList = shopSnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
-
-    return shopsList;
-  } catch (error) {
-    console.error("Error fetching shops:", error);
-    return [];
-  }
-};
-
-deleteShop = async (shopId, shopImage) => {
-  if (!shopId) {
-    console.error("❌ Shop ID is required for deletion!");
-    return;
-  }
-
-  try {
-    const shopRef = doc(this.firestore, "shops", shopId);
-
-    // Delete the shop image from Firebase Storage (if exists)
-    if (shopImage) {
-      const storage = getStorage();
-      const imageRef = ref(storage, shopImage); // Get reference to the image
-      await deleteObject(imageRef).catch((err) => console.warn("⚠️ Image deletion failed:", err));
+  deleteShop = async (shopId, shopImage) => {
+    if (!shopId) {
+      console.error("❌ Shop ID is required for deletion!");
+      return;
     }
 
-    // Delete shop document from Firestore
-    await deleteDoc(shopRef);
-    
-    console.log(`✅ Shop with ID ${shopId} deleted successfully!`);
-  } catch (error) {
-    console.error("❌ Error deleting shop:", error);
-  }
-};
+    try {
+      const shopRef = doc(this.firestore, "shops", shopId);
 
+      if (shopImage) {
+        const imageRef = ref(storage, shopImage);
+        await deleteObject(imageRef).catch((err) =>
+          console.warn("⚠️ Image deletion failed:", err)
+        );
+      }
 
-  /**
-   * Add a post to Firestore
-   */
+      await deleteDoc(shopRef);
+
+      console.log(`✅ Shop with ID ${shopId} deleted successfully!`);
+    } catch (error) {
+      console.error("❌ Error deleting shop:", error);
+    }
+  };
+
   addPost = async ({ text, localUri, name, avatar }) => {
     if (!this.uid) {
       console.error("🔥 User UID is not available!");
@@ -234,8 +304,8 @@ deleteShop = async (shopId, shopImage) => {
     try {
       const docRef = await addDoc(collection(firestore, "posts"), {
         text,
-        name,  // Use the name from the user data
-        avatar, // Include avatar in the post
+        name,
+        avatar,
         uid: this.uid,
         timestamp: this.timestamp,
         image: remoteUri,
@@ -247,54 +317,43 @@ deleteShop = async (shopId, shopImage) => {
     }
   };
 
-  /**
-   * Create a new user in Firebase Authentication and Firestore
-   */
   createUser = async (user, isVendor = false) => {
     let remoteUri = null;
-  
+
     try {
-      // Step 1: Create user in Firebase Authentication
-      const userCredential = await createUserWithEmailAndPassword(auth, user.email, user.password);
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        user.email,
+        user.password
+      );
       const { uid } = userCredential.user;
-  
-      console.log("✅ User created successfully in Firebase Auth:", uid);
-  
-      // Step 2: Reference to Firestore collection
+
       const userCollection = isVendor ? "vendors" : "users";
       const userDocRef = doc(firestore, userCollection, uid);
-  
-      // Step 3: Store user details in Firestore
+
       await setDoc(userDocRef, {
         uid,
         name: user.name,
         email: user.email,
         avatar: null,
         createdAt: new Date().toISOString(),
-        role: isVendor ? "vendor" : "customer",  // Identify role
+        role: isVendor ? "vendor" : "customer",
       });
-  
-      console.log(`✅ ${isVendor ? "Vendor" : "User"} document created in Firestore:`, uid);
-  
-      // Step 4: Upload avatar (if provided)
+
       if (user.avatar) {
-        remoteUri = await this.uploadPhotoAsync(user.avatar, `${userCollection}/${uid}`);
-        
-        // Step 5: Update Firestore with avatar URL
+        remoteUri = await this.uploadPhotoAsync(
+          user.avatar,
+          `${userCollection}/${uid}`
+        );
+
         await setDoc(userDocRef, { avatar: remoteUri }, { merge: true });
-  
-        console.log("✅ Avatar uploaded & Firestore updated:", remoteUri);
       }
-      
     } catch (error) {
       console.error("❌ Error creating user:", error);
       alert("Error: " + error.message);
     }
   };
 
-  /**
-   * Uploads an image to Firebase Storage and returns the download URL
-   */
   uploadPhotoAsync = async (uri, filename) => {
     try {
       const response = await fetch(uri);
@@ -308,7 +367,8 @@ deleteShop = async (shopId, shopImage) => {
         uploadTask.on(
           "state_changed",
           (snapshot) => {
-            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+            const progress =
+              (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
             console.log(`📤 Upload Progress: ${progress}%`);
           },
           (error) => {
@@ -327,45 +387,175 @@ deleteShop = async (shopId, shopImage) => {
     }
   };
 
-    // Fetch user data including name and avatar
-   getUserData = async (uid) => {
-      try {
-        const userDocRef = doc(firestore, "users", uid);
-        const userDoc = await getDoc(userDocRef);
-        if (userDoc.exists()) {
-          return userDoc.data(); // Return user data (name, avatar, etc.)
-        } else {
-          console.error("User document not found!");
-          return null;
-        }
-      } catch (error) {
-        console.error("Error fetching user data:", error);
-        return null;
-      }
-    };
-
-    // Fetch vendor data including name and avatar
- getVendorData = async (uid) => {
-  try {
-    const vendorDocRef = doc(firestore, "vendors", uid); // 🔹 Use "vendors" collection
-    const vendorDoc = await getDoc(vendorDocRef);
-    
-    if (vendorDoc.exists()) {
-      return vendorDoc.data(); // ✅ Return vendor data (name, avatar, etc.)
-    } else {
-      console.error("Vendor document not found!");
+  getUserData = async (uid) => {
+    try {
+      const userDocRef = doc(firestore, "users", uid);
+      const userDoc = await getDoc(userDocRef);
+      return userDoc.exists() ? userDoc.data() : null;
+    } catch (error) {
+      console.error("Error fetching user data:", error);
       return null;
     }
-  } catch (error) {
-    console.error("Error fetching vendor data:", error);
-    return null;
-  }
-};
+  };
+
+  getVendorData = async (uid) => {
+    try {
+      const vendorDocRef = doc(firestore, "vendors", uid);
+      const vendorDoc = await getDoc(vendorDocRef);
+      return vendorDoc.exists() ? vendorDoc.data() : null;
+    } catch (error) {
+      console.error("Error fetching vendor data:", error);
+      return null;
+    }
+  };
+
+  updateVendorProfile = async (updatedData) => {
+    const uid = this.uid;
+    if (!uid) {
+      console.error("❌ No user is logged in.");
+      return;
+    }
+  
+    const vendorRef = doc(this.firestore, "vendors", uid);
+  
+    try {
+      await updateDoc(vendorRef, updatedData);
+      console.log("✅ Vendor profile updated!");
+    } catch (error) {
+      console.error("❌ Failed to update vendor profile:", error);
+      throw error;
+    }
+  };
+
+  updateUserProfile = async (updatedData) => {
+    const uid = this.uid;
+    if (!uid) {
+      console.error("❌ No user is logged in.");
+      return;
+    }
+  
+    const userRef = doc(this.firestore, "users", uid);
+  
+    try {
+      await updateDoc(userRef, updatedData);
+      console.log("✅ User profile updated!");
+    } catch (error) {
+      console.error("❌ Failed to update user profile:", error);
+      throw error;
+    }
+  };
+
+  addFavorite = async ({ itemId, vendorId, type }) => {
+    const userId = this.uid;
+    if (!userId || !vendorId) return;
+  
+    const favoriteRef = doc(this.firestore, "favorites", `${userId}_${itemId}_${type}`);
+    const timestamp = new Date().toISOString();
+  
+    try {
+      await setDoc(favoriteRef, {
+        userId,
+        vendorId,
+        itemId,
+        type, // 'shop' or 'product'
+        createdAt: timestamp,
+      });
+  
+      // Add notification for the vendor
+      const notificationRef = doc(
+        this.firestore,
+        "vendors",
+        vendorId,
+        "notifications",
+        `${userId}_${itemId}_${type}`
+      );
+  
+      await setDoc(notificationRef, {
+        userId,
+        itemId,
+        type,
+        message: `Someone favorited your ${type === "shop" ? "shop" : "product"}.`,
+        read: false,
+        createdAt: timestamp,
+      });
+  
+      console.log(`✅ ${type} favorited and vendor notified!`);
+    } catch (error) {
+      console.error("❌ Error adding favorite or notification:", error);
+    }
+  };
+
+  removeFavorite = async ({ itemId, type }) => {
+    const userId = this.uid;
+    if (!userId) return;
+  
+    const favoriteRef = doc(this.firestore, "favorites", `${userId}_${itemId}_${type}`);
+  
+    try {
+      await deleteDoc(favoriteRef);
+      console.log(`❌ ${type} removed from favorites.`);
+    } catch (error) {
+      console.error("Error removing favorite:", error);
+    }
+  };
+
+  getFavoritesByType = async (type) => {
+    const userId = this.uid;
+    if (!userId) return [];
+  
+    try {
+      const q = query(
+        collection(this.firestore, "favorites"),
+        where("userId", "==", userId),
+        where("type", "==", type)
+      );
+  
+      const snapshot = await getDocs(q);
+      const favorites = snapshot.docs.map((doc) => doc.data());
+  
+      return favorites; 
+    } catch (error) {
+      console.error(`Error fetching ${type} favorites:`, error);
+      return [];
+    }
+  };
+
+  getVendorNotifications = async (vendorId) => {
+    try {
+      const notifCollection = collection(this.firestore, "vendors", vendorId, "notifications");
+      const snapshot = await getDocs(notifCollection);
+  
+      return snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+    } catch (error) {
+      console.error("❌ Error fetching vendor notifications:", error);
+      return [];
+    }
+  };
+
+  getShopById = async (shopId) => {
+    try {
+      const docSnap = await getDoc(doc(this.firestore, 'shops', shopId));
+      return docSnap.exists() ? docSnap.data() : null;
+    } catch (error) {
+      console.error('Error fetching shop:', error);
+      return null;
+    }
+  };
+  
+  getProductById = async (productId) => {
+    try {
+      const docSnap = await getDoc(doc(this.firestore, 'products', productId));
+      return docSnap.exists() ? docSnap.data() : null;
+    } catch (error) {
+      console.error('Error fetching product:', error);
+      return null;
+    }
+  };
 
 
-  /**
-   * Log the user out of Firebase Authentication
-   */
   signOut = () => {
     signOut(auth)
       .then(() => {
@@ -376,21 +566,15 @@ deleteShop = async (shopId, shopImage) => {
       });
   };
 
-  /**
-   * Returns the currently logged-in user's UID
-   */
   get uid() {
     return auth.currentUser ? auth.currentUser.uid : null;
   }
 
-  /**
-   * Returns the current timestamp
-   */
   get timestamp() {
     return Date.now();
   }
 }
 
-// Singleton instance of Fire class
+// Singleton
 Fire.shared = new Fire();
 export default Fire;

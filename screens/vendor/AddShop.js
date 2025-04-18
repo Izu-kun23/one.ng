@@ -47,7 +47,6 @@ const AddShop = () => {
     { label: "Others", value: "Others" },
   ]);
 
-  // Pick multiple images, limit to 6, show previews
   const pickImages = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -60,25 +59,35 @@ const AddShop = () => {
 
     if (!result.canceled) {
       const selected = result.assets.map((asset) => asset.uri);
-      setShopImages((prev) => [...prev, ...selected].slice(0, 6)); // Limit to 6 images max
+      setShopImages((prev) => [...prev, ...selected].slice(0, 6));
     }
+  };
+
+  const removeImage = (indexToRemove) => {
+    setShopImages((prev) => prev.filter((_, i) => i !== indexToRemove));
   };
 
   const handleSubmit = async () => {
     if (!shopName || !about || !street || !city) {
-      Alert.alert("Missing Information", "Please fill all the required fields.");
+      Alert.alert(
+        "Missing Information",
+        "Please fill all the required fields."
+      );
       return;
     }
 
     if (shopImages.length < 3) {
-      Alert.alert("Minimum Images Required", "Please upload at least 3 images.");
+      Alert.alert(
+        "Minimum Images Required",
+        "Please upload at least 3 images."
+      );
       return;
     }
 
     setLoading(true);
 
     try {
-      await Fire.shared.addShop({
+      const shopId = await Fire.shared.addShop({
         shopName,
         about,
         street,
@@ -89,8 +98,10 @@ const AddShop = () => {
         isOpen,
       });
 
-      Alert.alert("Success", "Your shop has been successfully added!");
-      navigation.goBack();
+      if (shopId) {
+        Alert.alert("Success", `Shop added successfully!\nShop ID: ${shopId}`);
+        navigation.goBack();
+      }
     } catch (error) {
       Alert.alert("Error", "Could not add shop. Please try again.");
       console.error("❌ Error adding shop:", error);
@@ -108,35 +119,54 @@ const AddShop = () => {
 
       <FlatList
         contentContainerStyle={styles.content}
-        data={[1]} // dummy data to render FlatList
+        data={[1]}
         renderItem={() => (
           <>
-            {/* Image Picker (6 boxes) */}
+            {/* Image Picker with Remove Button */}
             <View style={styles.imageContainer}>
-              {[...Array(6)].map((_, index) => (
-                <TouchableOpacity
-                  key={index}
-                  style={[styles.imageBox, shopImages[index] && styles.imageBoxFilled]}
-                  onPress={() => pickImages()}
-                >
-                  {shopImages[index] ? (
-                    <Image source={{ uri: shopImages[index] }} style={styles.imagePreview} />
-                  ) : (
-                    <Text style={styles.imageText}>+ Add Image</Text>
-                  )}
-                </TouchableOpacity>
-              ))}
+              {[...Array(6)].map((_, index) => {
+                const imageUri = shopImages[index];
+                return (
+                  <View
+                    key={index}
+                    style={[styles.imageBox, imageUri && styles.imageBoxFilled]}
+                  >
+                    {imageUri ? (
+                      <>
+                        <Image
+                          source={{ uri: imageUri }}
+                          style={styles.imagePreview}
+                        />
+                        <TouchableOpacity
+                          style={styles.removeButton}
+                          onPress={() => removeImage(index)}
+                        >
+                          <Text style={styles.removeButtonText}>×</Text>
+                        </TouchableOpacity>
+                      </>
+                    ) : (
+                      <TouchableOpacity
+                        onPress={pickImages}
+                        style={{
+                          flex: 1,
+                          justifyContent: "center",
+                          alignItems: "center",
+                        }}
+                      >
+                        <Text style={styles.imageText}>+ Add Image</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                );
+              })}
             </View>
 
-            {/* Shop Name */}
             <TextInput
               style={styles.input}
               placeholder="Shop Name *"
               value={shopName}
               onChangeText={setShopName}
             />
-
-            {/* About Shop */}
             <TextInput
               style={[styles.input, styles.textArea]}
               placeholder="About the Shop *"
@@ -144,8 +174,6 @@ const AddShop = () => {
               onChangeText={setAbout}
               multiline
             />
-
-            {/* Location */}
             <TextInput
               style={styles.input}
               placeholder="Street Address *"
@@ -158,8 +186,6 @@ const AddShop = () => {
               value={city}
               onChangeText={setCity}
             />
-
-            {/* Category Dropdown */}
             <DropDownPicker
               open={open}
               value={category}
@@ -170,17 +196,17 @@ const AddShop = () => {
               placeholder="Select a Category"
               style={styles.dropdown}
               dropDownContainerStyle={styles.dropdownContainer}
+              listMode="SCROLLVIEW" // ✅ Enables scroll
+              scrollViewProps={{
+                nestedScrollEnabled: true,
+              }}
             />
-
-            {/* Vendor Name (Optional) */}
             <TextInput
               style={styles.input}
               placeholder="Vendor Name (Optional)"
               value={vendorName}
               onChangeText={setVendorName}
             />
-
-            {/* Shop Status */}
             <View style={styles.row}>
               <Text style={styles.label}>Shop Status:</Text>
               <View style={styles.statusContainer}>
@@ -191,7 +217,6 @@ const AddShop = () => {
               </View>
             </View>
 
-            {/* Submit Button */}
             <TouchableOpacity
               style={styles.button}
               onPress={handleSubmit}
@@ -235,6 +260,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     justifyContent: "center",
     alignItems: "center",
+    position: "relative",
   },
   imageBoxFilled: {
     backgroundColor: "#D0D0D0",
@@ -247,6 +273,24 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "100%",
     borderRadius: 8,
+  },
+  removeButton: {
+    position: "absolute",
+    top: 4,
+    right: 4,
+    backgroundColor: "#000000aa",
+    borderRadius: 10,
+    width: 20,
+    height: 20,
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 1,
+  },
+  removeButtonText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "bold",
+    lineHeight: 20,
   },
   input: {
     backgroundColor: "#F7F7F7",

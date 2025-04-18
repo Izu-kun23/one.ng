@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import { 
   StyleSheet, 
   Text, 
@@ -9,38 +9,51 @@ import {
   Dimensions, 
   Modal, 
   Pressable, 
-  ScrollView 
-} from 'react-native';
-import Header from '../../components/Header3';
-import { Ionicons } from '@expo/vector-icons';
-import AddProducts from './AddProducts'; // adjust path as needed
-import Fire from '../../Fire'; // Assuming this is where your Fire class is located
+  ScrollView, 
+  Alert 
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import AddProducts from "./AddProducts"; // Adjust path if needed
+import Fire from "../../Fire";
+import { useNavigation, useRoute } from "@react-navigation/native";
 
-const { width } = Dimensions.get('window');
+const { width } = Dimensions.get("window");
 
 const VendorProducts = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [addModalVisible, setAddModalVisible] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
-  const [products, setProducts] = useState([]); // State to hold fetched products
-  
-  useEffect(() => {
-    // Fetch the products when the component mounts
-    const fetchProducts = async () => {
-      try {
-        // Assuming you have the vendor's ID (uid) available
-        const vendorId = Fire.shared.uid;
-        if (vendorId) {
-          const vendorProducts = await Fire.shared.getVendorProducts(vendorId);
-          setProducts(vendorProducts); // Update the state with the fetched products
-        }
-      } catch (error) {
-        console.error("Error fetching vendor products:", error);
-      }
-    };
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);  // State to manage refreshing
 
-    fetchProducts(); // Call the fetch function when the component mounts
-  }, []); // Empty dependency array means this runs once when the component mounts
+  const navigation = useNavigation();
+  const route = useRoute();
+  const { shopId } = route.params || {};
+
+  const fetchProducts = async () => {
+    setLoading(true);
+
+    try {
+      const vendorId = Fire.shared.uid;
+      if (vendorId && shopId) {
+        const vendorProducts = await Fire.shared.getVendorProducts(vendorId, shopId);
+        setProducts(vendorProducts);
+      } else {
+        console.warn("No vendor ID or shop ID found");
+      }
+    } catch (error) {
+      console.error("Error fetching vendor products:", error);
+      Alert.alert("Error", "Could not fetch products.");
+    } finally {
+      setLoading(false);
+      setRefreshing(false);  // Stop refreshing spinner
+    }
+  };
+
+  useEffect(() => {
+    fetchProducts();
+  }, [shopId]);
 
   const openModal = (product) => {
     setSelectedProduct(product);
@@ -56,7 +69,7 @@ const VendorProducts = () => {
     <TouchableOpacity style={styles.card} onPress={() => openModal(item)}>
       <Image source={{ uri: item.images[0] }} style={styles.image} />
       <View style={styles.info}>
-        <Text style={styles.name}>{item.name}</Text>
+        <Text style={styles.name}>{item.productName}</Text>
         <Text style={styles.price}>₦{item.price}</Text>
         <Text style={styles.stock}>Stock: {item.stock}</Text>
       </View>
@@ -66,10 +79,25 @@ const VendorProducts = () => {
     </TouchableOpacity>
   );
 
+  const handleRefresh = () => {
+    setRefreshing(true);
+    fetchProducts();  // Refresh the products when swiped
+  };
+
+  const ListEmptyComponent = () => (
+    <View style={styles.emptyContainer}>
+      <Text style={styles.emptyText}>You have no products yet.</Text>
+    </View>
+  );
+
   return (
     <View style={styles.container}>
+      {/* Header */}
       <View style={styles.headerContainer}>
-        <Header title="My Products" />
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+          <Ionicons name="chevron-back" size={30} color="black" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>My Products</Text>
         <TouchableOpacity
           style={styles.plusButton}
           onPress={() => setAddModalVisible(true)}
@@ -78,17 +106,27 @@ const VendorProducts = () => {
         </TouchableOpacity>
       </View>
 
+      {/* Loading Spinner */}
+      {loading && (
+        <View style={styles.loading}>
+          <Text>Loading...</Text>
+        </View>
+      )}
+
+      {/* Products List */}
       <FlatList
-        key={'2-columns'}
         data={products}
         renderItem={renderItem}
         keyExtractor={(item) => item.id}
         numColumns={2}
         contentContainerStyle={styles.list}
         columnWrapperStyle={styles.row}
+        refreshing={refreshing}
+        onRefresh={handleRefresh} // Handle refresh when swipe
+        ListEmptyComponent={ListEmptyComponent} // Show message when no products
       />
 
-      {/* PRODUCT DETAIL MODAL */}
+      {/* Product Detail Modal */}
       <Modal
         animationType="fade"
         transparent={true}
@@ -103,7 +141,7 @@ const VendorProducts = () => {
                   source={{ uri: selectedProduct.images[0] }}
                   style={styles.modalImage}
                 />
-                <Text style={styles.modalTitle}>{selectedProduct.name}</Text>
+                <Text style={styles.modalTitle}>{selectedProduct.productName}</Text>
                 <Text style={styles.modalPrice}>₦{selectedProduct.price}</Text>
                 <Text style={styles.modalStock}>
                   Stock: {selectedProduct.stock}
@@ -114,7 +152,7 @@ const VendorProducts = () => {
         </Pressable>
       </Modal>
 
-      {/* ADD PRODUCT SLIDE-UP MODAL */}
+      {/* Add Product Modal */}
       <Modal
         animationType="slide"
         transparent={true}
@@ -152,10 +190,24 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingTop: 20,
     paddingBottom: 12,
-    paddingHorizontal: 22,
-    paddingRight: 40,
+    paddingHorizontal: 20,
     backgroundColor: '#fff',
-    elevation: 2,
+    height: 105,
+  },
+  backButton: {
+    borderRadius: 50,
+    padding: 15,
+    paddingTop: 32,
+    paddingLeft: 10,
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: 'black',
+    paddingTop: 20,
   },
   plusButton: {
     backgroundColor: '#fff',
@@ -163,17 +215,16 @@ const styles = StyleSheet.create({
     shadowColor: '#000',
     shadowOpacity: 0.2,
     shadowRadius: 5,
-    position: 'center',
-    right: 20,
-    top: 10,
-    marginTop: 8,
-    marginBottom: 1,
-    marginRight: 2,
     padding: 10,
-    paddingHorizontal: 10,
+    paddingTop: 10,
+    paddingLeft: 10,
+    marginTop: 18,
   },
   list: {
-    padding: 16,
+    padding: 18,
+    paddingLeft: 12,
+    paddingRight: 12,
+    paddingBottom: 100,
   },
   row: {
     justifyContent: 'space-between',
@@ -271,5 +322,18 @@ const styles = StyleSheet.create({
   closeAddBtn: {
     alignSelf: 'flex-end',
     padding: 16,
+  },
+  loading: {
+    paddingTop: 50,
+    alignItems: 'center',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#666',
   },
 });

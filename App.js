@@ -29,6 +29,8 @@ import VendorLocation from "./screens/vendor/VendorLocation.js";
 import VendorProducts from "./screens/vendor/VendorProducts.js";
 import ProductModal from "./screens/vendor/ProductModal.js";
 import AddProducts from "./screens/vendor/AddProducts.js";
+import VendorEditProfile from "./screens/vendor/VendorEditProfile.js";
+import FavoriteScreen from "./screens/client/FavoriteScreen.js";
 
 // Navigation Setup
 const Stack = createNativeStackNavigator();
@@ -125,7 +127,7 @@ function BottomTabs({ navigation }) {
           tabBarIcon: ({ color, size }) => {
             let iconName;
             if (route.name === "Home") iconName = "home-outline";
-            else if (route.name === "Messages") iconName = "chatbubble-outline";
+            else if (route.name === "Favorites") iconName = "heart-outline";
             else if (route.name === "Feed") iconName = "earth-outline";
             else if (route.name === "Settings") iconName = "settings-outline";
 
@@ -137,7 +139,7 @@ function BottomTabs({ navigation }) {
         })}
       >
         <Tab.Screen name="Home" component={HomeScreen} />
-        <Tab.Screen name="Messages" component={MessageScreen} />
+        <Tab.Screen name="Favorites" component={FavoriteScreen} />
         <Tab.Screen
           name="Post"
           options={{
@@ -292,6 +294,14 @@ function VendorStack() {
       <Stack.Screen
         name="ProductModal"
         component={ProductModal}
+        options={{
+          presentation: "modal",
+          headerShown: false, // optional, depending on your modal design
+        }}
+      />
+      <Stack.Screen
+        name="VendorEditProfile"
+        component={VendorEditProfile}
         options={{
           presentation: "modal",
           headerShown: false, // optional, depending on your modal design

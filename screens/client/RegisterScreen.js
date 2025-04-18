@@ -16,7 +16,7 @@ import { getFirestore, doc, setDoc } from "firebase/firestore";
 import UserPermissions from "../../utilities/UserPermissions";
 import * as ImagePicker from "expo-image-picker";
 import { Ionicons } from "@expo/vector-icons";
-import Fire from "../../Fire"; 
+import Fire from "../../Fire";
 import loadingImage from "../../assets/loading.png"; // Import the loading image
 
 export default class RegisterScreen extends React.Component {
@@ -87,19 +87,15 @@ export default class RegisterScreen extends React.Component {
     return (
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <View style={styles.container}>
-          <StatusBar barStyle="light-content" />
+          <StatusBar barStyle="dark-content"  />
 
-          {/* Green Curved Greeting Card */}
-          <View style={styles.greetingCard}>
-            <Text style={styles.greetingText}>Join Us Today!</Text>
-          </View>
+          {/* Title */}
+          <Text style={styles.title}>Join Us Today!</Text>
 
           {/* Error Message */}
-          <View style={styles.errorMessage}>
-            {this.state.errorMessage && (
-              <Text style={{ color: "red" }}>{this.state.errorMessage}</Text>
-            )}
-          </View>
+          {this.state.errorMessage && (
+            <Text style={styles.errorMessage}>{this.state.errorMessage}</Text>
+          )}
 
           {/* Avatar Picker */}
           <View style={styles.avatarContainer}>
@@ -113,55 +109,51 @@ export default class RegisterScreen extends React.Component {
                   style={styles.avatar}
                 />
               ) : (
-                <Ionicons name="camera" size={40} color="#FFF" />
+                <Ionicons name="camera" size={36} color="#FFF" />
               )}
             </TouchableOpacity>
           </View>
 
           {/* Input Form */}
           <View style={styles.form}>
-            <View>
-              <Text style={styles.inputTitle}>Full Name</Text>
-              <TextInput
-                style={styles.input}
-                autoCapitalize="words"
-                onChangeText={(name) =>
-                  this.setState({ user: { ...this.state.user, name } })
-                }
-                value={this.state.user.name}
-              />
-            </View>
+            <Text style={styles.inputTitle}>Full Name</Text>
+            <TextInput
+              style={styles.input}
+              autoCapitalize="words"
+              onChangeText={(name) =>
+                this.setState({ user: { ...this.state.user, name } })
+              }
+              value={this.state.user.name}
+            />
 
-            <View style={{ marginTop: 20 }}>
-              <Text style={styles.inputTitle}>Email Address</Text>
-              <TextInput
-                style={styles.input}
-                autoCapitalize="none"
-                keyboardType="email-address"
-                onChangeText={(email) =>
-                  this.setState({ user: { ...this.state.user, email } })
-                }
-                value={this.state.user.email}
-              />
-            </View>
+            <Text style={[styles.inputTitle, { marginTop: 20 }]}>Email Address</Text>
+            <TextInput
+              style={styles.input}
+              autoCapitalize="none"
+              keyboardType="email-address"
+              onChangeText={(email) =>
+                this.setState({ user: { ...this.state.user, email } })
+              }
+              value={this.state.user.email}
+            />
 
-            <View style={{ marginTop: 20 }}>
-              <Text style={styles.inputTitle}>Password</Text>
-              <TextInput
-                style={styles.input}
-                secureTextEntry
-                autoCapitalize="none"
-                onChangeText={(password) =>
-                  this.setState({ user: { ...this.state.user, password } })
-                }
-                value={this.state.user.password}
-              />
-            </View>
+            <Text style={[styles.inputTitle, { marginTop: 20 }]}>Password</Text>
+            <TextInput
+              style={styles.input}
+              secureTextEntry
+              autoCapitalize="none"
+              onChangeText={(password) =>
+                this.setState({ user: { ...this.state.user, password } })
+              }
+              value={this.state.user.password}
+            />
           </View>
 
           {/* Sign Up Button */}
           <TouchableOpacity style={styles.button} onPress={this.handleSignUp}>
-            <Text style={{ color: "#FFF", fontWeight: "500" }}>Sign Up</Text>
+            <Text style={{ color: "#FFF", fontWeight: "600" }}>
+              Sign Up
+            </Text>
           </TouchableOpacity>
 
           {/* Navigate to Login */}
@@ -169,13 +161,13 @@ export default class RegisterScreen extends React.Component {
             style={{ alignSelf: "center", marginTop: 15 }}
             onPress={() => this.props.navigation.navigate("Login")}
           >
-            <Text style={{ color: "#414959", fontSize: 13 }}>
+            <Text style={{ fontSize: 13, color: "#414959" }}>
               Already have an account?{" "}
-              <Text style={{ fontWeight: "500", color: "#386F4F" }}>Login</Text>
+              <Text style={{ color: "#386F4F", fontWeight: "500" }}>Login</Text>
             </Text>
           </TouchableOpacity>
 
-          {/* Loading Image at the Bottom */}
+          {/* Loading Image at Bottom */}
           <Image source={loadingImage} style={styles.loadingImage} />
         </View>
       </TouchableWithoutFeedback>
@@ -190,33 +182,23 @@ const styles = StyleSheet.create({
     padding: 20,
     backgroundColor: "#f8f8f8",
   },
-  greetingCard: {
-    width: "110%",
-    height: "34%",
-    backgroundColor: "#386F4F",
-    borderBottomLeftRadius: 65,
-    borderBottomRightRadius: 65,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingTop: 30,
-    position: "absolute",
-    top: 0,
-  },
-  greetingText: {
-    fontSize: 46,
+  title: {
+    fontSize: 24,
     fontWeight: "bold",
-    color: "#fff",
+    color: "#386F4F",
+    marginTop: 59,
+    marginBottom: 30,
     textAlign: "center",
   },
   errorMessage: {
-    marginTop: "35%",
-    height: 50,
-    alignItems: "center",
-    justifyContent: "center",
+    color: "red",
+    fontSize: 14,
+    marginBottom: 10,
+    textAlign: "center",
   },
   avatarContainer: {
     alignSelf: "center",
-    marginTop: 40,
+    marginTop: 20,
     zIndex: 10,
   },
   avatarPlaceholder: {
@@ -226,6 +208,7 @@ const styles = StyleSheet.create({
     borderRadius: 50,
     justifyContent: "center",
     alignItems: "center",
+    marginBottom: 30,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,

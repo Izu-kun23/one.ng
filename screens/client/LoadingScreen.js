@@ -82,15 +82,17 @@ const styles = StyleSheet.create({
     backgroundColor: "#f8f8f8",
   },
   image: {
-    width: 350,
-    height: 350,
+    width: 300,
+    height: 300,
     resizeMode: "contain",
+    marginBottom: 20,
+
   },
   loadingContainer: {
     position: "absolute",
     bottom: 100,
     width: "80%",
-    height: 5,
+    height: 7,
     backgroundColor: "#ddd",
     borderRadius: 5,
   },

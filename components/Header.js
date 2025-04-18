@@ -1,9 +1,17 @@
-import React from "react";
-import { View, Text, TouchableOpacity, StyleSheet, Image } from "react-native";
+import React, { useEffect } from "react";
+import { View, Text, TouchableOpacity, StyleSheet, Image, StatusBar } from "react-native";
 import { useNavigation } from "@react-navigation/native"; // ✅ Import useNavigation
 
 const Header = ({ title, avatar }) => {
   const navigation = useNavigation(); // ✅ Get navigation instance
+
+  useEffect(() => {
+    // Set the status bar to dark content when this header is shown
+    StatusBar.setBarStyle('dark-content'); 
+
+    // Optionally, reset the status bar when leaving the screen (e.g., for dark mode screens)
+    return () => StatusBar.setBarStyle('light-content'); // Reset to light content if needed
+  }, []);
 
   return (
     <View style={styles.header}>
@@ -29,14 +37,14 @@ const Header = ({ title, avatar }) => {
 const styles = StyleSheet.create({
   header: {
     width: "100%",
-    height: 110,
-    backgroundColor: "#F2F2F2",
+    height: 125,
+    backgroundColor: "#FFF",  // White background
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 12,
     elevation: 3,
     shadowColor: "#000",
-    paddingTop: 23,
+    paddingTop: 27,
     paddingBottom: 3,
     paddingRight: 25,
   },
@@ -69,7 +77,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginLeft: 12,
     paddingRight: 12,
-
   },
   avatarText: {
     fontSize: 18,
