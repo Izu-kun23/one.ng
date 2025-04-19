@@ -23,13 +23,11 @@ export default class PostScreen extends React.Component {
   };
 
   async componentDidMount() {
-    // Request permissions
     const hasPermission = await UserPermissions.getCameraPermission();
     if (!hasPermission) {
       Alert.alert("Permission needed", "We need access to your media library.");
     }
 
-    // Load user data
     const userData = await this.getUserData();
     if (userData) {
       this.setState({
@@ -83,16 +81,55 @@ export default class PostScreen extends React.Component {
   };
 
   pickImage = async () => {
-    let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 1,
-    });
+    Alert.alert(
+      "Upload Photo",
+      "Choose an option",
+      [
+        {
+          text: "Take Photo",
+          onPress: async () => {
+            const cameraPermission = await ImagePicker.requestCameraPermissionsAsync();
+            if (cameraPermission.status !== "granted") {
+              Alert.alert("Permission needed", "Camera access is required.");
+              return;
+            }
 
-    if (!result.canceled) {
-      this.setState({ image: result.assets[0].uri });
-    }
+            let result = await ImagePicker.launchCameraAsync({
+              allowsEditing: true,
+              aspect: [4, 3],
+              quality: 1,
+            });
+
+            if (!result.canceled) {
+              this.setState({ image: result.assets[0].uri });
+            }
+          },
+        },
+        {
+          text: "Choose from Gallery",
+          onPress: async () => {
+            const mediaPermission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+            if (mediaPermission.status !== "granted") {
+              Alert.alert("Permission needed", "Media library access is required.");
+              return;
+            }
+
+            let result = await ImagePicker.launchImageLibraryAsync({
+              mediaTypes: ImagePicker.MediaTypeOptions.Images,
+              allowsEditing: true,
+              aspect: [4, 3],
+              quality: 1,
+            });
+
+            if (!result.canceled) {
+              this.setState({ image: result.assets[0].uri });
+            }
+          },
+        },
+        { text: "Cancel", style: "cancel" },
+      ],
+      { cancelable: true }
+    );
   };
 
   render() {
@@ -104,10 +141,10 @@ export default class PostScreen extends React.Component {
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => this.props.navigation.goBack()}>
-            <Ionicons name="arrow-back" size={24} color="#E71D69" />
+            <Ionicons name="arrow-back" size={24} color="#386F4F" />
           </TouchableOpacity>
           <TouchableOpacity onPress={this.handlePost} disabled={!canPost}>
-            <Text style={{ fontWeight: "500", color: canPost ? "#E71D69" : "#bbb" }}>
+            <Text style={{ fontWeight: "500", color: canPost ? "#386F4F" : "#bbb" }}>
               Post
             </Text>
           </TouchableOpacity>
@@ -116,7 +153,11 @@ export default class PostScreen extends React.Component {
         {/* Input */}
         <View style={styles.inputContainer}>
           <Image
-            source={{ uri: userAvatar || require("../../assets/tempAvatar.jpg") }}
+            source={
+              userAvatar
+                ? { uri: userAvatar }
+                : require("../../assets/tempAvatar.jpg")
+            }
             style={styles.avatar}
           />
           <TextInput
@@ -124,7 +165,15 @@ export default class PostScreen extends React.Component {
             multiline
             numberOfLines={4}
             style={{ flex: 1 }}
-            placeholder="Want to share something?"
+            placeholder="What's on your mind?"
+            placeholderTextColor="#bbb"
+            maxLength={280}
+            selectionColor="#386F4F"
+            textAlignVertical="top"
+            autoCorrect={false}
+            autoCapitalize="none"
+            autoComplete="off"
+            
             value={text}
             onChangeText={(text) => this.setState({ text })}
           />
@@ -132,7 +181,7 @@ export default class PostScreen extends React.Component {
 
         {/* Camera */}
         <TouchableOpacity style={styles.photo} onPress={this.pickImage}>
-          <Ionicons name="camera" size={32} color="#E71D69" />
+          <Ionicons name="camera" size={32} color="#386F4F" />
         </TouchableOpacity>
 
         {/* Image Preview */}

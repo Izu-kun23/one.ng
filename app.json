@@ -13,14 +13,16 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.izu.plusultra"
+      "bundleIdentifier": "com.izu.plusultra",
+      "newArchEnabled": true
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.izu.plusultra"
+      "package": "com.izu.plusultra",
+      "newArchEnabled": true
     },
     "web": {
       "favicon": "./assets/favicon.png"

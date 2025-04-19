@@ -31,6 +31,7 @@ import ProductModal from "./screens/vendor/ProductModal.js";
 import AddProducts from "./screens/vendor/AddProducts.js";
 import VendorEditProfile from "./screens/vendor/VendorEditProfile.js";
 import FavoriteScreen from "./screens/client/FavoriteScreen.js";
+import EditProducts from "./screens/vendor/EditProducts.js";
 
 // Navigation Setup
 const Stack = createNativeStackNavigator();
@@ -302,6 +303,14 @@ function VendorStack() {
       <Stack.Screen
         name="VendorEditProfile"
         component={VendorEditProfile}
+        options={{
+          presentation: "modal",
+          headerShown: false, // optional, depending on your modal design
+        }}
+      />
+      <Stack.Screen
+        name="EditProducts"
+        component={EditProducts}
         options={{
           presentation: "modal",
           headerShown: false, // optional, depending on your modal design

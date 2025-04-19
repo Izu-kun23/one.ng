@@ -86,7 +86,7 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace "com.plusultra"
+    namespace 'com.izu.plusultra'
     defaultConfig {
         applicationId 'com.izu.plusultra'
         minSdkVersion rootProject.ext.minSdkVersion

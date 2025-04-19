@@ -7,11 +7,15 @@ import {
   TouchableOpacity,
   ScrollView,
   Switch,
+  Platform,
 } from "react-native";
 import { doc, onSnapshot } from "firebase/firestore";
 import Fire from "../../Fire";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import Header4 from "../../components/Header4";
+
+import { scale, verticalScale } from "react-native-size-matters";
+import { RFValue } from "react-native-responsive-fontsize";
 
 export default class SettingsScreen extends React.Component {
   state = {
@@ -24,27 +28,18 @@ export default class SettingsScreen extends React.Component {
 
   componentDidMount() {
     const userId = this.props.uid || Fire.shared.uid;
-
-    if (!userId) {
-      console.error("🔥 User ID is undefined!");
-      return;
-    }
+    if (!userId) return;
 
     const userRef = doc(Fire.shared.firestore, "users", userId);
-
     this.unsubscribe = onSnapshot(userRef, (docSnap) => {
       if (docSnap.exists()) {
         this.setState({ user: docSnap.data() });
-      } else {
-        console.log("🚨 No such user in Firestore!");
       }
     });
   }
 
   componentWillUnmount() {
-    if (this.unsubscribe) {
-      this.unsubscribe();
-    }
+    if (this.unsubscribe) this.unsubscribe();
   }
 
   handleLogout = () => {
@@ -67,13 +62,14 @@ export default class SettingsScreen extends React.Component {
     const { user, isDarkTheme, notificationsEnabled } = this.state;
 
     return (
-      <View style={{ flex: 1 }}>
-      <Header4 />
-
-      <ScrollView style={styles.container}>
-        {/* User Profile Section */}
-        <View style={styles.profileHeader}>
-          <View style={styles.avatarContainer}>
+      <View style={styles.container}>
+        <Header4 />
+        <ScrollView
+          contentContainerStyle={{ paddingBottom: verticalScale(30) }}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Profile Section */}
+          <View style={styles.profileHeader}>
             <Image
               source={
                 user.avatar
@@ -82,72 +78,74 @@ export default class SettingsScreen extends React.Component {
               }
               style={styles.avatar}
             />
-          </View>
-          <Text style={styles.name}>{user.name || "User Name"}</Text>
+            <Text style={styles.name}>{user.name || "User Name"}</Text>
 
-          {/* Edit Profile Button */}
+            <TouchableOpacity
+              style={styles.editProfileButton}
+              onPress={() => this.props.navigation.navigate("EditProfile")}
+            >
+              <Text style={styles.editProfileText}>Edit Profile</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Preferences Section */}
+          <View style={styles.cardContainer}>
+            <View style={styles.card}>
+              <View style={styles.cardItem}>
+                <Ionicons name="moon-outline" size={scale(18)} color="#333" style={styles.icon} />
+                <Text style={styles.cardText}>Dark Theme</Text>
+                <View style={{ flex: 1 }} />
+                <Switch
+                  value={isDarkTheme}
+                  onValueChange={this.toggleTheme}
+                  trackColor={{ false: "#ccc", true: "#386F4F" }}
+                  thumbColor={Platform.OS === "android" ? "#fff" : undefined}
+                />
+              </View>
+              <View style={[styles.cardItem, styles.lastCardItem]}>
+                <Ionicons name="notifications-circle-outline" size={scale(18)} color="#333" style={styles.icon} />
+                <Text style={styles.cardText}>Push Notifications</Text>
+                <View style={{ flex: 1 }} />
+                <Switch
+                  value={notificationsEnabled}
+                  onValueChange={this.toggleNotifications}
+                  trackColor={{ false: "#ccc", true: "#386F4F" }}
+                  thumbColor={Platform.OS === "android" ? "#fff" : undefined}
+                />
+              </View>
+            </View>
+
+            {/* Legal Section */}
+            <View style={styles.card}>
+              <TouchableOpacity style={styles.cardItem}>
+                <Ionicons name="shield-checkmark-outline" size={scale(18)} color="#333" style={styles.icon} />
+                <Text style={styles.cardText}>Privacy Policy</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.cardItem}>
+                <Ionicons name="document-text-outline" size={scale(18)} color="#333" style={styles.icon} />
+                <Text style={styles.cardText}>Terms of Service</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.cardItem, styles.lastCardItem]}>
+                <Ionicons name="trash-outline" size={scale(18)} color="#E74C3C" style={styles.icon} />
+                <Text style={styles.deleteText}>Delete Account</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Bottom Buttons */}
           <TouchableOpacity
-            style={styles.editProfileButton}
-            onPress={() => this.props.navigation.navigate("EditProfile")}
+            style={styles.vendorButton}
+            onPress={() => this.props.navigation.navigate("Vendor")}
           >
-            <Text style={styles.editProfileText}>Edit Profile</Text>
+            <Ionicons name="briefcase-outline" size={scale(18)} color="#000" style={styles.icon} />
+            <Text style={styles.vendorText}>Switch to Vendor</Text>
           </TouchableOpacity>
-        </View>
 
-        {/* Cards Section */}
-        <View style={styles.cardContainer}>
-        
-
-          {/* Preferences */}
-          <View style={styles.card}>
-            <View style={styles.cardItem}>
-              <Ionicons name="moon-outline" size={20} color="#333" style={styles.icon} />
-              <Text style={styles.cardText}>Dark Theme</Text>
-              <View style={{ flex: 1 }} />
-              <Switch value={isDarkTheme} onValueChange={this.toggleTheme} />
-            </View>
-            <View style={styles.cardItem}>
-              <Ionicons name="notifications-circle-outline" size={20} color="#333" style={styles.icon} />
-              <Text style={styles.cardText}>Push Notifications</Text>
-              <View style={{ flex: 1 }} />
-              <Switch
-                value={notificationsEnabled}
-                onValueChange={this.toggleNotifications}
-              />
-            </View>
-          </View>
-
-          {/* Legal */}
-          <View style={styles.card}>
-            <TouchableOpacity style={styles.cardItem}>
-              <Ionicons name="shield-checkmark-outline" size={20} color="#333" style={styles.icon} />
-              <Text style={styles.cardText}>Privacy Policy</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.cardItem}>
-              <Ionicons name="document-text-outline" size={20} color="#333" style={styles.icon} />
-              <Text style={styles.cardText}>Terms of Service</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.cardItem, styles.lastCardItem]}>
-              <Ionicons name="trash-outline" size={20} color="#E74C3C" style={styles.icon} />
-              <Text style={styles.deleteText}>Delete Account</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Bottom Buttons */}
-        <TouchableOpacity
-          style={styles.vendorButton}
-          onPress={() => this.props.navigation.navigate("Vendor")}
-        >
-          <Ionicons name="briefcase-outline" size={20} color="black" style={styles.icon} />
-          <Text style={styles.vendorText}>Switch to Vendor</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.logoutButton} onPress={this.handleLogout}>
-          <Ionicons name="log-out-outline" size={20} color="white" style={styles.icon} />
-          <Text style={styles.logoutButtonText}>Log Out</Text>
-        </TouchableOpacity>
-      </ScrollView>
+          <TouchableOpacity style={styles.logoutButton} onPress={this.handleLogout}>
+            <Ionicons name="log-out-outline" size={scale(18)} color="#fff" style={styles.icon} />
+            <Text style={styles.logoutButtonText}>Log Out</Text>
+          </TouchableOpacity>
+        </ScrollView>
       </View>
     );
   }
@@ -156,117 +154,109 @@ export default class SettingsScreen extends React.Component {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: "#f9f9f9",
   },
   profileHeader: {
-    marginTop: 2,
     alignItems: "center",
+    paddingVertical: verticalScale(16),
     backgroundColor: "#fff",
-    paddingVertical: 25,
-  },
-  avatarContainer: {
-    shadowColor: "#151734",
-    shadowRadius: 30,
-    shadowOpacity: 0.4,
-    marginBottom: 1,
+    borderBottomColor: "#eee",
+    borderBottomWidth: 1,
   },
   avatar: {
-    width: 136,
-    height: 136,
-    borderRadius: 68,
+    width: scale(80),
+    height: scale(80),
+    borderRadius: scale(40),
+    marginBottom: verticalScale(6),
   },
   name: {
-    fontSize: 20,
+    fontSize: RFValue(18),
     fontWeight: "600",
     color: "#333",
   },
   editProfileButton: {
-    marginTop: 10,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 19,
-    backgroundColor: "#fff",
+    marginTop: verticalScale(4),
+    paddingHorizontal: scale(12),
+    paddingVertical: verticalScale(4),
+    borderRadius: scale(15),
+    borderColor: "#ccc",
     borderWidth: 1,
-    borderColor: "grey",
   },
   editProfileText: {
-    color: "black",
-    fontSize: 14,
-    fontWeight: "600",
+    color: "#333",
+    fontSize: RFValue(12),
+    fontWeight: "500",
   },
   cardContainer: {
-    marginTop: 10,
-    paddingHorizontal: 20,
+    paddingHorizontal: scale(12),
+    marginTop: verticalScale(14),
   },
   card: {
     backgroundColor: "#fff",
-    borderRadius: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 15,
-    marginBottom: 15,
+    borderRadius: scale(6),
+    marginBottom: verticalScale(10),
+    paddingHorizontal: scale(12),
+    paddingVertical: verticalScale(6),
+    elevation: 1,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 1,
   },
   cardItem: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 12,
-    borderBottomWidth: 1,
+    paddingVertical: verticalScale(8),
     borderBottomColor: "#eee",
+    borderBottomWidth: 1,
   },
   lastCardItem: {
     borderBottomWidth: 0,
   },
-  icon: {
-    marginRight: 10,
-  },
   cardText: {
-    fontSize: 16,
+    fontSize: RFValue(14),
     color: "#333",
     fontWeight: "500",
   },
   deleteText: {
     color: "#E74C3C",
     fontWeight: "600",
+    fontSize: RFValue(14),
+  },
+  icon: {
+    marginRight: scale(6),
   },
   vendorButton: {
     flexDirection: "row",
     backgroundColor: "#FFF",
-    paddingVertical: 11,
-    marginTop: 10,
-    marginHorizontal: 130,
-    borderRadius: 10,
+    paddingVertical: verticalScale(10),
+    marginTop: verticalScale(16),
+    marginHorizontal: scale(70),
+    borderRadius: scale(6),
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    elevation: 1,
   },
   vendorText: {
-    color: "black",
-    fontSize: 16,
+    color: "#000",
+    fontSize: RFValue(14),
     fontWeight: "600",
-    marginLeft: 5,
+    marginLeft: scale(4),
   },
   logoutButton: {
     flexDirection: "row",
     backgroundColor: "#386F4F",
-    paddingVertical: 13,
-    marginTop: 15,
-    marginHorizontal: 130,
-    borderRadius: 10,
+    paddingVertical: verticalScale(10),
+    marginTop: verticalScale(10),
+    marginHorizontal: scale(70),
+    borderRadius: scale(6),
     alignItems: "center",
     justifyContent: "center",
   },
   logoutButtonText: {
     color: "#fff",
-    fontSize: 16,
+    fontSize: RFValue(14),
     fontWeight: "600",
-    marginLeft: 5,
+    marginLeft: scale(4),
   },
 });

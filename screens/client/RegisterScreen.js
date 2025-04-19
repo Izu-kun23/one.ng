@@ -9,6 +9,9 @@ import {
   Keyboard,
   Image,
   StatusBar,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
 } from "react-native";
 import { auth } from "../../firebaseConfig";
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
@@ -85,9 +88,15 @@ export default class RegisterScreen extends React.Component {
 
   render() {
     return (
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <View style={styles.container}>
-          <StatusBar barStyle="dark-content"  />
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
+        <ScrollView
+          contentContainerStyle={styles.scrollViewContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <StatusBar barStyle="dark-content" />
 
           {/* Title */}
           <Text style={styles.title}>Join Us Today!</Text>
@@ -169,8 +178,8 @@ export default class RegisterScreen extends React.Component {
 
           {/* Loading Image at Bottom */}
           <Image source={loadingImage} style={styles.loadingImage} />
-        </View>
-      </TouchableWithoutFeedback>
+        </ScrollView>
+      </KeyboardAvoidingView>
     );
   }
 }
@@ -181,6 +190,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 20,
     backgroundColor: "#f8f8f8",
+  },
+  scrollViewContent: {
+    flexGrow: 1,
+    justifyContent: "center", // This will center the form vertically if there is extra space
   },
   title: {
     fontSize: 24,
@@ -222,7 +235,7 @@ const styles = StyleSheet.create({
     borderRadius: 50,
   },
   form: {
-    width: "80%",
+    width: "100%", // Set form width to 100% to make it wider
     marginTop: 50,
   },
   inputTitle: {
@@ -238,9 +251,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#161F3D",
     marginBottom: 15,
+    paddingLeft: 5,
+    width: "300", // Set input width to 100% to fill the form container
   },
   button: {
-    width: "45%",
+    width: "90%", // Adjusted to take up more screen space
     backgroundColor: "#386F4F",
     borderRadius: 8,
     height: 50,
@@ -252,5 +267,6 @@ const styles = StyleSheet.create({
     width: 150,
     height: 110,
     marginTop: 20,
+    alignSelf: "center",
   },
 });

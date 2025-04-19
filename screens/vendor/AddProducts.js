@@ -49,6 +49,12 @@ const AddProducts = () => {
     { label: 'Others', value: 'Others' },
   ]);
 
+  const formatPriceInput = (value) => {
+    const numeric = value.replace(/\D/g, ''); // Remove non-digit characters
+    if (!numeric) return '';
+    return Number(numeric).toLocaleString('en-NG');
+  };
+
   const pickMedia = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -70,43 +76,42 @@ const AddProducts = () => {
   };
 
   const handleSubmit = async () => {
-    if (!name || !desc || !price || !category || !stock || isNaN(stock)) {
-      alert("Please fill all required fields correctly.");
+    const parsedPrice = parseInt(price.replace(/,/g, ''), 10);
+
+    if (!name || !desc || !parsedPrice || !category || !stock || isNaN(stock)) {
+      alert('Please fill all required fields correctly.');
       return;
     }
-  
+
     setIsLoading(true);
-  
+
     try {
-      // 🔐 Get current user's shop ID
       const shopId = await Fire.shared.getShopIdForCurrentUser();
       if (!shopId) {
         setIsLoading(false);
-        Alert.alert("Missing Shop", "You need to create a shop before adding a product.");
+        Alert.alert('Missing Shop', 'You need to create a shop before adding a product.');
         return;
       }
-  
+
       let productData = {
-        productName: name || '',
-        productDesc: desc || '',
-        price: price || '',
-        category: category || '',
-        size: size || '',
-        gender: gender || '',
-        expiryDate: expiryDate || '',
-        author: author || '',
-        brand: brand || '',
-        stock: stock || '',
+        productName: name,
+        productDesc: desc,
+        price: parsedPrice,
+        category,
+        size,
+        gender,
+        expiryDate,
+        author,
+        brand,
+        stock,
         productImages: [],
-        shopId: shopId, // ✅ Required
+        shopId,
       };
-  
-      // Remove any undefined fields
+
       Object.keys(productData).forEach(
         (key) => productData[key] === undefined && delete productData[key]
       );
-  
-      // Upload images
+
       const imageUrls = [];
       for (let i = 0; i < media.length; i++) {
         const imageUri = media[i].uri;
@@ -114,16 +119,14 @@ const AddProducts = () => {
         const url = await Fire.shared.uploadPhotoAsync(imageUri, imagePath);
         imageUrls.push(url);
       }
-  
+
       productData.productImages = imageUrls;
-  
+
       const productRef = await Fire.shared.addProduct(productData);
-      console.log("Product added successfully with ID:", productRef);
-  
+      console.log('✅ Product added with ID:', productRef);
+
       setIsLoading(false);
-      Alert.alert("✅ Success", "Your product has been added!");
-  
-      // Reset form
+      Alert.alert('✅ Success', 'Your product has been added!');
       setName('');
       setDesc('');
       setPrice('');
@@ -136,12 +139,12 @@ const AddProducts = () => {
       setBrand('');
       setStock('');
     } catch (error) {
-      console.error("Error adding product:", error);
+      console.error('❌ Error adding product:', error);
       setIsLoading(false);
-      Alert.alert("❌ Error", "Something went wrong. Please try again.");
+      Alert.alert('❌ Error', 'Something went wrong. Please try again.');
     }
   };
-  
+
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40 }}>
@@ -170,7 +173,16 @@ const AddProducts = () => {
 
         <TextInput placeholder="Product Name" placeholderTextColor="#888" value={name} onChangeText={setName} style={styles.input} />
         <TextInput placeholder="Product Description" placeholderTextColor="#888" value={desc} onChangeText={setDesc} multiline numberOfLines={4} style={[styles.input, { height: 100 }]} />
-        <TextInput placeholder="Price (₦)" placeholderTextColor="#888" value={price} onChangeText={setPrice} keyboardType="numeric" style={styles.input} />
+        
+        <TextInput
+          placeholder="Price (₦)"
+          placeholderTextColor="#888"
+          value={price}
+          onChangeText={(text) => setPrice(formatPriceInput(text))}
+          keyboardType="numeric"
+          style={styles.input}
+        />
+
         <TextInput placeholder="Stock / Quantity Available" placeholderTextColor="#888" value={stock} onChangeText={setStock} keyboardType="numeric" style={styles.input} />
 
         <Text style={styles.label}>Category</Text>
@@ -262,14 +274,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#F3F3F3',
     borderColor: '#ccc',
     borderRadius: 8,
-    zIndex: 1000,
     marginBottom: 14,
     padding: 13,
   },
   dropdownContainer: {
     backgroundColor: '#fff',
     borderColor: '#ccc',
-    zIndex: 1000,
     borderRadius: 8,
     marginBottom: 19,
   },

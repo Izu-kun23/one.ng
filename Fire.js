@@ -174,8 +174,35 @@ class Fire {
       return [];
     }
   };
-  
 
+  updateProduct = async (productId, updatedData) => {
+    if (!this.uid) {
+      console.error("🔥 User UID is not available!");
+      return;
+    }
+  
+    try {
+      const productRef = doc(this.firestore, "products", productId);
+  
+      // Filter out undefined or null fields
+      const dataToUpdate = {};
+      Object.keys(updatedData).forEach((key) => {
+        if (updatedData[key] !== undefined && updatedData[key] !== null) {
+          dataToUpdate[key] = updatedData[key];
+        }
+      });
+  
+      await updateDoc(productRef, dataToUpdate);
+  
+      console.log("✅ Product updated successfully!");
+      return true;
+    } catch (error) {
+      console.error("❌ Error updating product:", error);
+      throw error;
+    }
+  };
+
+  
   /* --------------------------------------- SHOPS DATABASE --------------------------------------- */
 
   addShop = async ({

@@ -1,19 +1,18 @@
 import React, { useState, useEffect } from "react";
-import { 
-  StyleSheet, 
-  Text, 
-  View, 
-  FlatList, 
-  Image, 
-  TouchableOpacity, 
-  Dimensions, 
-  Modal, 
-  Pressable, 
-  ScrollView, 
-  Alert 
+import {
+  StyleSheet,
+  Text,
+  View,
+  FlatList,
+  Image,
+  TouchableOpacity,
+  Dimensions,
+  Modal,
+  Pressable,
+  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import AddProducts from "./AddProducts"; // Adjust path if needed
+import AddProducts from "./AddProducts";
 import Fire from "../../Fire";
 import { useNavigation, useRoute } from "@react-navigation/native";
 
@@ -25,7 +24,7 @@ const VendorProducts = () => {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);  // State to manage refreshing
+  const [refreshing, setRefreshing] = useState(false);
 
   const navigation = useNavigation();
   const route = useRoute();
@@ -33,7 +32,6 @@ const VendorProducts = () => {
 
   const fetchProducts = async () => {
     setLoading(true);
-
     try {
       const vendorId = Fire.shared.uid;
       if (vendorId && shopId) {
@@ -47,7 +45,7 @@ const VendorProducts = () => {
       Alert.alert("Error", "Could not fetch products.");
     } finally {
       setLoading(false);
-      setRefreshing(false);  // Stop refreshing spinner
+      setRefreshing(false);
     }
   };
 
@@ -65,24 +63,37 @@ const VendorProducts = () => {
     setSelectedProduct(null);
   };
 
-  const renderItem = ({ item }) => (
-    <TouchableOpacity style={styles.card} onPress={() => openModal(item)}>
-      <Image source={{ uri: item.images[0] }} style={styles.image} />
-      <View style={styles.info}>
-        <Text style={styles.name}>{item.productName}</Text>
-        <Text style={styles.price}>₦{item.price}</Text>
-        <Text style={styles.stock}>Stock: {item.stock}</Text>
-      </View>
-      <TouchableOpacity style={styles.editBtn}>
-        <Text style={styles.editText}>Edit</Text>
-      </TouchableOpacity>
-    </TouchableOpacity>
-  );
-
   const handleRefresh = () => {
     setRefreshing(true);
-    fetchProducts();  // Refresh the products when swiped
+    fetchProducts();
   };
+
+  const formatPrice = (price) => {
+    return price.toLocaleString("en-NG");
+  };
+
+  const renderItem = ({ item }) => (
+    <View style={styles.card}>
+      <TouchableOpacity onPress={() => openModal(item)}>
+        <Image source={{ uri: item.images[0] }} style={styles.image} />
+      </TouchableOpacity>
+      <View style={styles.info}>
+        <Text style={styles.name}>{item.name}</Text>
+        <Text style={styles.price}>₦{formatPrice(item.price)}</Text>
+        <Text style={styles.stock}>Stock: {item.stock}</Text>
+      </View>
+      <TouchableOpacity
+        style={styles.editBtn}
+        onPress={() =>
+          navigation.navigate("EditProducts", {
+            product: item,
+          })
+        }
+      >
+        <Text style={styles.editText}>Edit</Text>
+      </TouchableOpacity>
+    </View>
+  );
 
   const ListEmptyComponent = () => (
     <View style={styles.emptyContainer}>
@@ -98,22 +109,19 @@ const VendorProducts = () => {
           <Ionicons name="chevron-back" size={30} color="black" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>My Products</Text>
-        <TouchableOpacity
-          style={styles.plusButton}
-          onPress={() => setAddModalVisible(true)}
-        >
+        <TouchableOpacity style={styles.plusButton} onPress={() => setAddModalVisible(true)}>
           <Ionicons name="add-circle-outline" size={26} color="#228B22" />
         </TouchableOpacity>
       </View>
 
-      {/* Loading Spinner */}
+      {/* Loading */}
       {loading && (
         <View style={styles.loading}>
           <Text>Loading...</Text>
         </View>
       )}
 
-      {/* Products List */}
+      {/* Product Grid */}
       <FlatList
         data={products}
         renderItem={renderItem}
@@ -122,8 +130,8 @@ const VendorProducts = () => {
         contentContainerStyle={styles.list}
         columnWrapperStyle={styles.row}
         refreshing={refreshing}
-        onRefresh={handleRefresh} // Handle refresh when swipe
-        ListEmptyComponent={ListEmptyComponent} // Show message when no products
+        onRefresh={handleRefresh}
+        ListEmptyComponent={ListEmptyComponent}
       />
 
       {/* Product Detail Modal */}
@@ -137,15 +145,10 @@ const VendorProducts = () => {
           <View style={styles.modalContent}>
             {selectedProduct && (
               <>
-                <Image
-                  source={{ uri: selectedProduct.images[0] }}
-                  style={styles.modalImage}
-                />
-                <Text style={styles.modalTitle}>{selectedProduct.productName}</Text>
-                <Text style={styles.modalPrice}>₦{selectedProduct.price}</Text>
-                <Text style={styles.modalStock}>
-                  Stock: {selectedProduct.stock}
-                </Text>
+                <Image source={{ uri: selectedProduct.images[0] }} style={styles.modalImage} />
+                <Text style={styles.modalTitle}>{selectedProduct.name}</Text>
+                <Text style={styles.modalPrice}>₦{formatPrice(selectedProduct.price)}</Text>
+                <Text style={styles.modalStock}>Stock: {selectedProduct.stock}</Text>
               </>
             )}
           </View>
@@ -161,15 +164,10 @@ const VendorProducts = () => {
       >
         <View style={styles.addProductModalContainer}>
           <View style={styles.addProductContent}>
-            <TouchableOpacity
-              onPress={() => setAddModalVisible(false)}
-              style={styles.closeAddBtn}
-            >
+            <TouchableOpacity onPress={() => setAddModalVisible(false)} style={styles.closeAddBtn}>
               <Ionicons name="close" size={24} color="#000" />
             </TouchableOpacity>
-            <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
-              <AddProducts />
-            </ScrollView>
+            <AddProducts />
           </View>
         </View>
       </Modal>
@@ -182,16 +180,16 @@ export default VendorProducts;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9F9F9',
+    backgroundColor: "#F9F9F9",
   },
   headerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingTop: 20,
     paddingBottom: 12,
     paddingHorizontal: 20,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     height: 105,
   },
   backButton: {
@@ -199,141 +197,134 @@ const styles = StyleSheet.create({
     padding: 15,
     paddingTop: 32,
     paddingLeft: 10,
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: 'black',
+    fontWeight: "bold",
+    color: "black",
     paddingTop: 20,
   },
   plusButton: {
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderRadius: 50,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOpacity: 0.2,
     shadowRadius: 5,
     padding: 10,
-    paddingTop: 10,
-    paddingLeft: 10,
     marginTop: 18,
   },
   list: {
     padding: 18,
-    paddingLeft: 12,
-    paddingRight: 12,
     paddingBottom: 100,
   },
   row: {
-    justifyContent: 'space-between',
+    justifyContent: "space-between",
     marginBottom: 16,
   },
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     width: (width - 48) / 2,
     borderRadius: 12,
-    overflow: 'hidden',
+    overflow: "hidden",
     elevation: 3,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOpacity: 0.1,
     shadowRadius: 5,
   },
   image: {
-    width: '100%',
+    width: "100%",
     height: 120,
-    resizeMode: 'cover',
+    resizeMode: "cover",
   },
   info: {
     padding: 10,
   },
   name: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
+    fontWeight: "600",
+    color: "#333",
   },
   price: {
     fontSize: 14,
-    color: '#228B22',
+    color: "#228B22",
     marginTop: 4,
   },
   stock: {
     fontSize: 12,
-    color: '#888',
+    color: "#888",
     marginTop: 2,
   },
   editBtn: {
-    backgroundColor: '#228B22',
+    backgroundColor: "#228B22",
     paddingVertical: 8,
-    alignItems: 'center',
+    alignItems: "center",
   },
   editText: {
-    color: '#fff',
-    fontWeight: '600',
+    color: "#fff",
+    fontWeight: "600",
     fontSize: 14,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
   },
   modalContent: {
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     padding: 20,
     borderRadius: 14,
-    width: '80%',
-    alignItems: 'center',
+    width: "80%",
+    alignItems: "center",
   },
   modalImage: {
-    width: '100%',
+    width: "100%",
     height: 150,
     borderRadius: 10,
     marginBottom: 16,
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 8,
-    color: '#333',
+    color: "#333",
   },
   modalPrice: {
     fontSize: 16,
-    color: '#228B22',
+    color: "#228B22",
     marginBottom: 6,
   },
   modalStock: {
     fontSize: 14,
-    color: '#666',
+    color: "#666",
   },
   addProductModalContainer: {
     flex: 1,
-    justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: "flex-end",
+    backgroundColor: "rgba(0,0,0,0.5)",
   },
   addProductContent: {
-    backgroundColor: '#fff',
-    height: '90%',
+    backgroundColor: "#fff",
+    height: "90%",
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingTop: 10,
   },
   closeAddBtn: {
-    alignSelf: 'flex-end',
+    alignSelf: "flex-end",
     padding: 16,
   },
   loading: {
     paddingTop: 50,
-    alignItems: 'center',
+    alignItems: "center",
   },
   emptyContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   emptyText: {
     fontSize: 16,
-    color: '#666',
+    color: "#666",
   },
 });
