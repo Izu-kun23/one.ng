@@ -44,7 +44,7 @@ const VendorShop = ({ navigation }) => {
           return {
             id: doc.id,
             ...data,
-            shopImage: data.images?.[0] || null, // Get only the first image from the 'images' array
+            shopImage: data.images?.[0] || null,
           };
         });
         setShops(fetchedShops);
@@ -64,7 +64,7 @@ const VendorShop = ({ navigation }) => {
         return {
           id: doc.id,
           ...data,
-          shopImage: data.images?.[0] || null, // Real-time update with first image
+          shopImage: data.images?.[0] || null,
         };
       });
       setShops(updatedShops);
@@ -84,7 +84,7 @@ const VendorShop = ({ navigation }) => {
         return {
           id: doc.id,
           ...data,
-          shopImage: data.images?.[0] || null, // Refresh with first image
+          shopImage: data.images?.[0] || null,
         };
       });
       setShops(refreshedShops);
@@ -96,7 +96,7 @@ const VendorShop = ({ navigation }) => {
   }, [vendorId]);
 
   const handleDeleteShop = async (shopId) => {
-    Alert.alert("Delete Shop", "Are you sure you want to delete this shop? This action cannot be undone.", [
+    Alert.alert("Delete Shop", "Are you sure you want to delete this shop?", [
       { text: "Cancel", style: "cancel" },
       {
         text: "Delete",
@@ -114,7 +114,7 @@ const VendorShop = ({ navigation }) => {
   };
 
   const handleArchiveShop = async (shopId) => {
-    Alert.alert("Archive Shop", "Are you sure you want to archive this shop?", [
+    Alert.alert("Archive Shop", "Archive this shop?", [
       { text: "Cancel", style: "cancel" },
       {
         text: "Archive",
@@ -122,7 +122,6 @@ const VendorShop = ({ navigation }) => {
           try {
             const shopRef = doc(Fire.shared.firestore, "shops", shopId);
             const shopSnap = await getDoc(shopRef);
-
             if (shopSnap.exists()) {
               await setDoc(doc(Fire.shared.firestore, "archived_shops", shopId), shopSnap.data());
               await deleteDoc(shopRef);
@@ -138,16 +137,10 @@ const VendorShop = ({ navigation }) => {
 
   const renderRightActions = (shopId) => (
     <View style={styles.swipeActions}>
-      <TouchableOpacity
-        style={[styles.actionButton, styles.archiveButton]}
-        onPress={() => handleArchiveShop(shopId)}
-      >
+      <TouchableOpacity style={[styles.actionButton, styles.archiveButton]} onPress={() => handleArchiveShop(shopId)}>
         <Text style={styles.actionText}>Archive</Text>
       </TouchableOpacity>
-      <TouchableOpacity
-        style={[styles.actionButton, styles.deleteButton]}
-        onPress={() => handleDeleteShop(shopId)}
-      >
+      <TouchableOpacity style={[styles.actionButton, styles.deleteButton]} onPress={() => handleDeleteShop(shopId)}>
         <Text style={styles.actionText}>Delete</Text>
       </TouchableOpacity>
     </View>
@@ -155,27 +148,35 @@ const VendorShop = ({ navigation }) => {
 
   const renderShop = ({ item }) => (
     <Swipeable renderRightActions={() => renderRightActions(item.id)}>
-      <TouchableOpacity
-        style={styles.shopCard}
-        onPress={() => navigation.navigate("ShopDetail", { shop: item })}
-      >
-        {item.shopImage ? (
-          <Image source={{ uri: item.shopImage }} style={styles.shopImage} />
-        ) : (
-          <View style={[styles.shopImage, { backgroundColor: "#eee" }]} />
-        )}
+      <View style={styles.shopCard}>
+        <TouchableOpacity
+          style={styles.editIcon}
+          onPress={() => navigation.navigate("EditShop", { shop: item })}
+        >
+          <Entypo name="edit" size={18} color="#fff" />
+        </TouchableOpacity>
 
-        <View style={styles.shopInfo}>
-          <Text style={styles.shopName}>{item.name}</Text>
-          {item.about && <Text style={styles.shopAbout}>{item.about}</Text>}
-          {item.location && (
-            <View style={styles.locationContainer}>
-              <Entypo name="location-pin" size={16} color="#386F4F" />
-              <Text style={styles.locationText}>{item.location}</Text>
-            </View>
+        <TouchableOpacity
+          style={{ flex: 1, flexDirection: "row", alignItems: "center" }}
+          onPress={() => navigation.navigate("ShopDetail", { shop: item })}
+        >
+          {item.shopImage ? (
+            <Image source={{ uri: item.shopImage }} style={styles.shopImage} />
+          ) : (
+            <View style={[styles.shopImage, { backgroundColor: "#eee" }]} />
           )}
-        </View>
-      </TouchableOpacity>
+          <View style={styles.shopInfo}>
+            <Text style={styles.shopName}>{item.name}</Text>
+            {item.about && <Text style={styles.shopAbout}>{item.about}</Text>}
+            {item.location && (
+              <View style={styles.locationContainer}>
+                <Entypo name="location-pin" size={16} color="#386F4F" />
+                <Text style={styles.locationText}>{item.location}</Text>
+              </View>
+            )}
+          </View>
+        </TouchableOpacity>
+      </View>
     </Swipeable>
   );
 
@@ -220,6 +221,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     alignItems: "center",
     elevation: 3,
+    position: "relative",
   },
   shopImage: { width: 80, height: 80, borderRadius: 10, marginRight: 15 },
   shopInfo: { flex: 1 },
@@ -238,7 +240,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   addButton: {
-    backgroundColor: "#386F4F",
+    backgroundColor: "#228B21",
     padding: 16,
     borderRadius: 8,
     alignItems: "center",
@@ -281,6 +283,16 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   archiveButtonText: { fontSize: 16, color: "#386F4F", fontWeight: "bold" },
+  editIcon: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    backgroundColor: "#228B21",
+    padding: 6,
+    borderRadius: 20,
+    zIndex: 10,
+    elevation: 3,
+  },
 });
 
 export default VendorShop;

@@ -9,9 +9,10 @@ import {
   Easing,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native"; // 👈 add this
 
-// Header4.js
 const Header4 = ({ searchText, setSearchText }) => {
+  const navigation = useNavigation(); // 👈 use this
   const [showSearch, setShowSearch] = useState(false);
   const searchAnim = useRef(new Animated.Value(0)).current;
 
@@ -31,26 +32,33 @@ const Header4 = ({ searchText, setSearchText }) => {
 
   return (
     <View style={styles.container}>
-      {/* Default Header */}
-      <View style={styles.defaultHeader}>
-        <TouchableOpacity onPress={() => setShowSearch(true)}>
-          <Ionicons name="search" size={24} color="#fff" />
-        </TouchableOpacity>
+     <View style={styles.defaultHeader}>
+  <TouchableOpacity onPress={() => setShowSearch(true)}>
+    <Ionicons name="search" size={24} color="#fff" />
+  </TouchableOpacity>
 
-        <View style={styles.logoContainer}>
-          <Image
-            source={require("../assets/one.png")}
-            style={styles.logo}
-            resizeMode="contain"
-          />
-        </View>
+  <View style={styles.logoContainer}>
+    <Image
+      source={require("../assets/one.png")}
+      style={styles.logo}
+      resizeMode="contain"
+    />
+  </View>
 
-        <TouchableOpacity>
-          <Ionicons name="basket-outline" size={28} color="#fff" />
-        </TouchableOpacity>
-      </View>
+  <View style={styles.iconGroup}>
+    <TouchableOpacity
+      onPress={() => navigation.navigate("CustomerOrders")}
+      style={{ marginRight: 16 }} // 👈 moved left by adding margin
+    >
+      <Ionicons name="cube-outline" size={28} color="#fff" />
+    </TouchableOpacity>
 
-      {/* Search Overlay */}
+    <TouchableOpacity onPress={() => navigation.navigate("Basket")}>
+      <Ionicons name="basket-outline" size={28} color="#fff" />
+    </TouchableOpacity>
+  </View>
+</View>
+
       <Animated.View
         style={[
           styles.searchOverlay,
@@ -72,7 +80,7 @@ const Header4 = ({ searchText, setSearchText }) => {
           placeholder="Search..."
           value={searchText}
           onChangeText={setSearchText}
-          autoFocus={showSearch} // ✅ Only autoFocus when search is active
+          autoFocus={showSearch}
         />
         <TouchableOpacity onPress={() => setShowSearch(false)}>
           <Ionicons name="close" size={22} color="#333" />
@@ -107,6 +115,7 @@ const styles = StyleSheet.create({
     maxWidth: 300,
     flexShrink: 1,
     resizeMode: "contain",
+    paddingLeft: 45,
   },
   searchOverlay: {
     position: "absolute",
@@ -127,5 +136,9 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 16,
+  },
+  iconGroup: {
+    flexDirection: "row",
+    alignItems: "center",
   },
 });

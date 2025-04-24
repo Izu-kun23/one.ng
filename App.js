@@ -32,6 +32,12 @@ import AddProducts from "./screens/vendor/AddProducts.js";
 import VendorEditProfile from "./screens/vendor/VendorEditProfile.js";
 import FavoriteScreen from "./screens/client/FavoriteScreen.js";
 import EditProducts from "./screens/vendor/EditProducts.js";
+import EditShop from "./screens/vendor/EditShop.js";
+import Orders from "./screens/vendor/Orders.js";
+import ProductDetail from "./screens/client/ProductDetail.js";
+import Basket from "./screens/client/Basket.js";
+import Checkout from "./screens/client/Checkout.js";
+import CustomerOrders from "./screens/client/CustomerOrders.js";
 
 // Navigation Setup
 const Stack = createNativeStackNavigator();
@@ -74,6 +80,15 @@ function VendorDrawer() {
         options={{
           drawerIcon: ({ color, size }) => (
             <Ionicons name="pricetag" size={size} color={color} />
+          ),
+        }}
+      />
+      <Drawer.Screen
+        name="Orders"
+        component={Orders}
+        options={{
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="cube" size={size} color={color} />
           ),
         }}
       />
@@ -193,6 +208,44 @@ function AppStack() {
         options={{ title: "Edit Profile" }}
       />
       <Stack.Screen name="SettingsScreen" component={SettingsScreen} />
+
+      <Stack.Screen
+        name="ProductDetail"
+        component={ProductDetail}
+        options={{
+          title: "item",
+          headerShown: false,
+        }}
+      />
+
+      <Stack.Screen
+        name="Basket"
+        component={Basket}
+        options={{
+          title: "item",
+          headerShown: false,
+        }}
+      />
+
+      <Stack.Screen 
+      name="Checkout" 
+      component={Checkout} 
+      options={{
+        title: "Checkout",
+        headerShown: false,
+      }}
+      
+      />
+
+<Stack.Screen 
+      name="CustomerOrders" 
+      component={CustomerOrders} 
+      options={{
+        title: "Customer Orders",
+        headerShown: false,
+      }}
+      
+      />
     </Stack.Navigator>
   );
 }
@@ -316,7 +369,14 @@ function VendorStack() {
           headerShown: false, // optional, depending on your modal design
         }}
       />
-
+      <Stack.Screen
+        name="EditShop"
+        component={EditShop}
+        options={{
+          presentation: "modal",
+          headerShown: false, // optional, depending on your modal design
+        }}
+      />
     </Stack.Navigator>
   );
 }
@@ -351,7 +411,6 @@ export default function App() {
           component={VendorStack}
           options={{ headerShown: false }}
         />
-        
       </Stack.Navigator>
     </NavigationContainer>
   );

@@ -5,22 +5,18 @@ import {
   TextInput,
   StyleSheet,
   TouchableOpacity,
-  TouchableWithoutFeedback,
-  Keyboard,
-  Image,
-  StatusBar,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Image,
+  Alert,
+  StatusBar,
 } from "react-native";
-import { auth } from "../../firebaseConfig";
-import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
-import { getFirestore, doc, setDoc } from "firebase/firestore";
-import UserPermissions from "../../utilities/UserPermissions";
-import * as ImagePicker from "expo-image-picker";
 import { Ionicons } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
+import UserPermissions from "../../utilities/UserPermissions";
 import Fire from "../../Fire";
-import loadingImage from "../../assets/loading.png"; // Import the loading image
+import loadingImage from "../../assets/loading.png";
 
 export default class RegisterScreen extends React.Component {
   state = {
@@ -31,44 +27,69 @@ export default class RegisterScreen extends React.Component {
       avatar: null,
     },
     errorMessage: null,
+    loading: false,
   };
 
+  // Handle user sign-up
   handleSignUp = async () => {
     const { name, email, password, avatar } = this.state.user;
 
+    if (!name || !email || !password) {
+      this.setState({ errorMessage: "All fields are required." });
+      return;
+    }
+
+    this.setState({ errorMessage: null, loading: true });
+
     try {
-      const userCredentials = await createUserWithEmailAndPassword(
-        auth,
-        email,
-        password
+      // Register the user with Firebase or your authentication system
+      await Fire.shared.createUser(
+        { name, email, password, avatar },
+        false // isVendor = false
       );
-      const user = userCredentials.user;
 
-      let avatarUrl = null;
-      if (avatar) {
-        avatarUrl = await Fire.shared.uploadPhotoAsync(
-          avatar,
-          `avatars/${user.uid}`
-        );
-      }
+      // Send registration email
+      console.log('Sending email to:', email, 'Name:', name);  // Debugging log
+      await this.sendRegistrationEmail(email, name);
 
-      await updateProfile(user, { displayName: name, photoURL: avatarUrl });
-
-      const userDocRef = doc(getFirestore(), "users", user.uid);
-      await setDoc(userDocRef, {
-        uid: user.uid,
-        name,
-        email,
-        avatar: avatarUrl,
-        createdAt: new Date().toISOString(),
-      });
+      Alert.alert(
+        "Account Created",
+        "Your account has been created successfully. Please check your email to be sure of your account.",
+      );
 
       this.props.navigation.navigate("Login");
     } catch (error) {
+      console.error('Error in handleSignUp:', error);  // Debugging log
       this.setState({ errorMessage: error.message });
+    } finally {
+      this.setState({ loading: false });
     }
   };
 
+  // Send registration email to user
+  sendRegistrationEmail = async (email, name) => {
+    try {
+      // Send a POST request to your backend to send the verification email
+      const response = await fetch('http://localhost:3000/send-verification-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, name }),
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        console.log('Email sent successfully:', data);
+      } else {
+        throw new Error(data.message || 'Error sending email');
+      }
+    } catch (error) {
+      console.error('Error sending registration email:', error);
+    }
+  };
+
+  // Handle avatar pick from the device
   handlePickAvatar = async () => {
     await UserPermissions.getCameraPermission();
 
@@ -98,15 +119,12 @@ export default class RegisterScreen extends React.Component {
         >
           <StatusBar barStyle="dark-content" />
 
-          {/* Title */}
           <Text style={styles.title}>Join Us Today!</Text>
 
-          {/* Error Message */}
           {this.state.errorMessage && (
             <Text style={styles.errorMessage}>{this.state.errorMessage}</Text>
           )}
 
-          {/* Avatar Picker */}
           <View style={styles.avatarContainer}>
             <TouchableOpacity
               style={styles.avatarPlaceholder}
@@ -123,7 +141,6 @@ export default class RegisterScreen extends React.Component {
             </TouchableOpacity>
           </View>
 
-          {/* Input Form */}
           <View style={styles.form}>
             <Text style={styles.inputTitle}>Full Name</Text>
             <TextInput
@@ -135,7 +152,9 @@ export default class RegisterScreen extends React.Component {
               value={this.state.user.name}
             />
 
-            <Text style={[styles.inputTitle, { marginTop: 20 }]}>Email Address</Text>
+            <Text style={[styles.inputTitle, { marginTop: 20 }]}>
+              Email Address
+            </Text>
             <TextInput
               style={styles.input}
               autoCapitalize="none"
@@ -158,14 +177,16 @@ export default class RegisterScreen extends React.Component {
             />
           </View>
 
-          {/* Sign Up Button */}
-          <TouchableOpacity style={styles.button} onPress={this.handleSignUp}>
+          <TouchableOpacity
+            style={styles.button}
+            onPress={this.handleSignUp}
+            disabled={this.state.loading}
+          >
             <Text style={{ color: "#FFF", fontWeight: "600" }}>
-              Sign Up
+              {this.state.loading ? "Registering..." : "Sign Up"}
             </Text>
           </TouchableOpacity>
 
-          {/* Navigate to Login */}
           <TouchableOpacity
             style={{ alignSelf: "center", marginTop: 15 }}
             onPress={() => this.props.navigation.navigate("Login")}
@@ -176,7 +197,6 @@ export default class RegisterScreen extends React.Component {
             </Text>
           </TouchableOpacity>
 
-          {/* Loading Image at Bottom */}
           <Image source={loadingImage} style={styles.loadingImage} />
         </ScrollView>
       </KeyboardAvoidingView>

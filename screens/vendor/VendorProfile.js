@@ -275,7 +275,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: "center",
     borderWidth: 1.5,
-    borderColor: "#386F4F",
+    borderColor: "#228B21",
   },
   editText: {
     color: "#386F4F",

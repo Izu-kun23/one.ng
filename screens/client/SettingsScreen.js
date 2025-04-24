@@ -8,12 +8,12 @@ import {
   ScrollView,
   Switch,
   Platform,
+  Animated,
 } from "react-native";
 import { doc, onSnapshot } from "firebase/firestore";
 import Fire from "../../Fire";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import Header4 from "../../components/Header4";
-
 import { scale, verticalScale } from "react-native-size-matters";
 import { RFValue } from "react-native-responsive-fontsize";
 
@@ -22,6 +22,7 @@ export default class SettingsScreen extends React.Component {
     user: {},
     isDarkTheme: false,
     notificationsEnabled: true,
+    imageOpacity: new Animated.Value(0), // Initial opacity for fade-in effect
   };
 
   unsubscribe = null;
@@ -58,6 +59,15 @@ export default class SettingsScreen extends React.Component {
     }));
   };
 
+  // Function to animate image opacity when it loads
+  handleImageLoad = () => {
+    Animated.timing(this.state.imageOpacity, {
+      toValue: 1, // Fade in fully
+      duration: 500, // 500ms fade-in duration
+      useNativeDriver: true, // Use native driver for better performance
+    }).start();
+  };
+
   render() {
     const { user, isDarkTheme, notificationsEnabled } = this.state;
 
@@ -70,13 +80,14 @@ export default class SettingsScreen extends React.Component {
         >
           {/* Profile Section */}
           <View style={styles.profileHeader}>
-            <Image
+            <Animated.Image
               source={
                 user.avatar
                   ? { uri: user.avatar }
                   : require("../../assets/tempAvatar.jpg")
               }
-              style={styles.avatar}
+              style={[styles.avatar, { opacity: this.state.imageOpacity }]} // Animated opacity
+              onLoad={this.handleImageLoad} // Trigger fade-in effect when the image is loaded
             />
             <Text style={styles.name}>{user.name || "User Name"}</Text>
 
@@ -131,6 +142,15 @@ export default class SettingsScreen extends React.Component {
               </TouchableOpacity>
             </View>
           </View>
+
+          {/* Customer Orders Button */}
+          <TouchableOpacity
+            style={styles.customerOrdersButton}
+            onPress={() => this.props.navigation.navigate("CustomerOrders")}
+          >
+            <Ionicons name="cart-outline" size={scale(18)} color="#000" style={styles.icon} />
+            <Text style={styles.customerOrdersText}>Orders</Text>
+          </TouchableOpacity>
 
           {/* Bottom Buttons */}
           <TouchableOpacity
@@ -225,6 +245,23 @@ const styles = StyleSheet.create({
   },
   icon: {
     marginRight: scale(6),
+  },
+  customerOrdersButton: {
+    flexDirection: "row",
+    backgroundColor: "#FFF",
+    paddingVertical: verticalScale(10),
+    marginTop: verticalScale(16),
+    marginHorizontal: scale(70),
+    borderRadius: scale(6),
+    alignItems: "center",
+    justifyContent: "center",
+    elevation: 1,
+  },
+  customerOrdersText: {
+    color: "#000",
+    fontSize: RFValue(14),
+    fontWeight: "600",
+    marginLeft: scale(4),
   },
   vendorButton: {
     flexDirection: "row",

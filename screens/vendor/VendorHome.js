@@ -191,7 +191,7 @@ const styles = StyleSheet.create({
     width: 180,
   },
   cardTitle: { fontSize: 14, color: '#555', marginBottom: 6 },
-  cardValue: { fontSize: 20, fontWeight: 'bold', color: '#228B22' },
+  cardValue: { fontSize: 20, fontWeight: 'bold', color: '#228B21' },
   toggleContainer: {
     alignItems: 'flex-end',
     paddingHorizontal: 16,
