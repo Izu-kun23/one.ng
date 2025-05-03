@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useRef } from "react";
 import {
   View,
   ScrollView,
@@ -9,6 +9,7 @@ import {
   Dimensions,
   Platform,
   Linking,
+  Animated,
 } from "react-native";
 import Header from "../../components/Header3";
 
@@ -16,6 +17,8 @@ const { width } = Dimensions.get("window");
 
 const VendorShopDetail = ({ route, navigation }) => {
   const { shop } = route.params;
+  const scrollX = useRef(new Animated.Value(0)).current;
+  const [activeIndex, setActiveIndex] = useState(0);
 
   const openMap = () => {
     const lat = shop.coordinates?.latitude || shop.latitude;
@@ -37,40 +40,67 @@ const VendorShopDetail = ({ route, navigation }) => {
     );
   };
 
+  const handleScroll = (event) => {
+    const index = Math.round(event.nativeEvent.contentOffset.x / width);
+    setActiveIndex(index);
+  };
+
   return (
     <View style={styles.container}>
       <Header title="Shop Details" navigation={navigation} />
 
       <ScrollView contentContainerStyle={styles.scrollContainer}>
-        {/* Shop Images Carousel */}
-        {shop.images && shop.images.length > 0 ? (
-          <ScrollView
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            style={styles.imageCarousel}
-          >
-            {shop.images.map((imgUri, index) => (
-              <Image
-                key={index}
-                style={styles.image}
-                source={{ uri: imgUri }}
-              />
-            ))}
-          </ScrollView>
-        ) : (
-          <View style={[styles.image, styles.placeholderImage]}>
-            <Text style={styles.placeholderText}>No Images</Text>
-          </View>
-        )}
+        {/* Hero Section with Swipable Images */}
+        <View style={styles.heroImageContainer}>
+          {shop.images && shop.images.length > 0 ? (
+            <>
+              <ScrollView
+                horizontal
+                pagingEnabled
+                showsHorizontalScrollIndicator={false}
+                onScroll={handleScroll}
+                scrollEventThrottle={16}
+              >
+                {shop.images.map((imgUri, index) => (
+                  <Image
+                    key={index}
+                    source={{ uri: imgUri }}
+                    style={styles.heroImage}
+                  />
+                ))}
+              </ScrollView>
 
-        {/* Shop Info */}
-        <View style={styles.infoContainer}>
+              {/* Pagination Dots */}
+              <View style={styles.pagination}>
+                {shop.images.map((_, index) => (
+                  <View
+                    key={index}
+                    style={[
+                      styles.dot,
+                      index === activeIndex ? styles.activeDot : null,
+                    ]}
+                  />
+                ))}
+              </View>
+            </>
+          ) : (
+            <View
+              style={[styles.heroImage, { justifyContent: "center", alignItems: "center" }]}
+            >
+              <Text style={{ color: "#999", fontSize: 16 }}>No Image</Text>
+            </View>
+          )}
+        </View>
+
+        {/* Card Section with all info */}
+        <View style={styles.card}>
           <Text style={styles.shopName}>{shop.name}</Text>
-          <Text style={styles.price}>Category: {shop.category || "N/A"}</Text>
+          <Text style={styles.shopCategory}>
+            {shop.category ? `Category: ${shop.category}` : "Uncategorized"}
+          </Text>
 
           <Text style={styles.description}>
-            {shop.about || "No description provided."}
+            {shop.about || "This vendor has not added a description yet."}
           </Text>
 
           {shop.location && (
@@ -78,15 +108,14 @@ const VendorShopDetail = ({ route, navigation }) => {
               <Text style={styles.location}>📍 {shop.location}</Text>
             </TouchableOpacity>
           )}
-        </View>
 
-        {/* Edit Button */}
-        <TouchableOpacity
-          style={styles.viewButton}
-          onPress={() => navigation.navigate("VendorProducts", { shopId: shop.id })}
-        >
-          <Text style={styles.viewButtonText}>View your products</Text>
-        </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.viewButton}
+            onPress={() => navigation.navigate("VendorProducts", { shopId: shop.id })}
+          >
+            <Text style={styles.viewButtonText}>View Your Products</Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
     </View>
   );
@@ -97,79 +126,94 @@ export default VendorShopDetail;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8F8F8",
+    backgroundColor: "#F9FAFB",
   },
   scrollContainer: {
-    padding: 20,
+    paddingBottom: 40,
   },
-  imageCarousel: {
-    marginBottom: 20,
+  heroImageContainer: {
+    width,
+    height: 280,
+    backgroundColor: "#eee",
   },
-  image: {
-    width: width - 40,
-    height: 250,
-    borderRadius: 15,
-    marginRight: 15,
+  heroImage: {
+    width,
+    height: 280,
     resizeMode: "cover",
   },
-  placeholderImage: {
-    backgroundColor: "#eee",
+  pagination: {
+    position: "absolute",
+    bottom: 10,
+    width: "100%",
+    flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
   },
-  placeholderText: {
-    color: "#999",
-    fontSize: 16,
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#ccc",
+    marginHorizontal: 4,
   },
-  infoContainer: {
+  activeDot: {
+    backgroundColor: "#10B981",
+    width: 10,
+    height: 10,
+  },
+  card: {
+    marginTop: -5,
     backgroundColor: "#fff",
+    marginHorizontal: 14,
     padding: 20,
-    borderRadius: 15,
+    paddingHorizontal: 15,
+    borderRadius: 16,
     shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 5,
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 3,
   },
   shopName: {
-    fontSize: 26,
+    fontSize: 22,
     fontWeight: "bold",
-    color: "#222",
-    marginBottom: 10,
+    color: "#111827",
     textAlign: "center",
   },
-  price: {
-    fontSize: 18,
-    color: "#999",
-    marginBottom: 10,
+  shopCategory: {
+    fontSize: 16,
+    color: "#6B7280",
     textAlign: "center",
+    marginTop: 4,
+    marginBottom: 10,
   },
   description: {
-    fontSize: 16,
-    color: "#555",
-    textAlign: "center",
+    fontSize: 15,
+    color: "#374151",
     lineHeight: 22,
     marginBottom: 15,
+    textAlign: "center",
   },
   location: {
     fontSize: 16,
-    color: "#386F4F",
-    textAlign: "center",
+    color: "#2563EB",
     fontWeight: "500",
+    textAlign: "center",
     textDecorationLine: "underline",
+    marginBottom: 10,
   },
   viewButton: {
-    marginTop: 20,
-    backgroundColor: "#228B22",
-    paddingVertical: 12,
-    borderRadius: 10,
+    marginTop: 10,
+    backgroundColor: "#10B981",
+    paddingVertical: 14,
+    borderRadius: 12,
     alignItems: "center",
     shadowColor: "#000",
-    shadowOpacity: 0.2,
-    shadowRadius: 5,
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
     elevation: 3,
   },
   viewButtonText: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "bold",
     color: "#fff",
   },

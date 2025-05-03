@@ -30,6 +30,10 @@ export default function VendorDetail({ route }) {
   const [refreshing, setRefreshing] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
   const [showModal, setShowModal] = useState(false);
+  const [activeTab, setActiveTab] = useState("overview");
+  const [showFullDesc, setShowFullDesc] = useState(false);
+
+  const description = vendor.about || vendor.description || "";
 
   useEffect(() => {
     if (vendor?.images) setImages(vendor.images);
@@ -101,10 +105,12 @@ export default function VendorDetail({ route }) {
       >
         <Pressable style={styles.modalBackdrop} onPress={() => setShowModal(false)}>
           <View style={styles.modalContent}>
-            <TouchableOpacity onPress={() => {
-              setShowModal(false);
-              alert("Contact Vendor: " + (vendor.contact || "No contact info available."));
-            }}>
+            <TouchableOpacity
+              onPress={() => {
+                setShowModal(false);
+                alert("Contact Vendor: " + (vendor.contact || "No contact info available."));
+              }}
+            >
               <Text style={styles.modalOption}>Contact Vendor</Text>
             </TouchableOpacity>
           </View>
@@ -125,7 +131,7 @@ export default function VendorDetail({ route }) {
             pagingEnabled
             showsHorizontalScrollIndicator={false}
             keyExtractor={(_, index) => index.toString()}
-            onScroll={e => {
+            onScroll={(e) => {
               const index = Math.round(
                 e.nativeEvent.contentOffset.x / e.nativeEvent.layoutMeasurement.width
               );
@@ -139,50 +145,90 @@ export default function VendorDetail({ route }) {
             {(images.length > 0 ? images : [defaultImage]).map((_, index) => (
               <View
                 key={index}
-                style={[
-                  styles.dot,
-                  activeIndex === index && styles.dotActive,
-                ]}
+                style={[styles.dot, activeIndex === index && styles.dotActive]}
               />
             ))}
           </View>
         </View>
 
-        {/* Vendor Info */}
-        <View style={styles.infoContainer}>
-          <Text style={styles.vendorCategory}>{vendor.category}</Text>
-          <Text style={styles.vendorDescription}>
-            {vendor.about || vendor.description}
-          </Text>
-
-          <View style={styles.locationContainer}>
-            <Ionicons name="location-outline" size={18} color="#888" />
-            <Text style={styles.vendorLocation}>{vendor.location}</Text>
-          </View>
+        {/* Tab Switcher */}
+        <View style={styles.tabSwitcher}>
+          <TouchableOpacity
+            style={[styles.tabButton, activeTab === "overview" && styles.activeTab]}
+            onPress={() => setActiveTab("overview")}
+          >
+            <Text style={[styles.tabText, activeTab === "overview" && styles.activeTabText]}>
+              Overview
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tabButton, activeTab === "products" && styles.activeTab]}
+            onPress={() => setActiveTab("products")}
+          >
+            <Text style={[styles.tabText, activeTab === "products" && styles.activeTabText]}>
+              Products
+            </Text>
+          </TouchableOpacity>
         </View>
 
-        {/* Products */}
-        <Text style={styles.sectionTitle}>Products</Text>
-        <FlatList
-          data={products}
-          horizontal
-          keyExtractor={(item) => item.id}
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: 16 }}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              style={styles.productCard}
-              onPress={() => navigation.navigate("ProductDetail", { product: item })}
-            >
-              <Image
-                source={{ uri: item.images?.[0] || defaultProductImage }}
-                style={styles.productImage}
-              />
-              <Text style={styles.productName}>{item.name}</Text>
-              <Text style={styles.productPrice}>₦{item.price}</Text>
+        {/* Tab Content */}
+        {activeTab === "overview" && (
+          <View style={styles.infoContainer}>
+            <Text style={styles.infoHeader}>CATEGORY</Text>
+            <Text style={styles.vendorCategory}>{vendor.category}</Text>
+
+            <Text style={styles.infoHeader}>ABOUT US:</Text>
+            <Text style={styles.vendorDescription}>
+              {showFullDesc || description.length <= 150
+                ? description
+                : description.slice(0, 99) + "..."}
+            </Text>
+
+            {description.length > 99 && (
+              <TouchableOpacity onPress={() => setShowFullDesc(!showFullDesc)}>
+                <Text style={styles.readMore}>
+                  {showFullDesc ? "Read Less " : "Read More "}
+                </Text> 
+              </TouchableOpacity>
+            )}
+
+            <Text style={styles.infoHeader}>LOCATION</Text>
+            <View style={styles.locationContainer}>
+              <Ionicons name="location-outline" size={18} color="#888" />
+              <Text style={styles.vendorLocation}>{vendor.location}</Text>
+            </View>
+
+            <TouchableOpacity style={styles.applyButton} onPress={() => alert("Apply to this shop")}>
+              <Text style={styles.applyButtonText}>Apply to this shop</Text>
             </TouchableOpacity>
-          )}
-        />
+          </View>
+        )}
+
+        {activeTab === "products" && (
+          <>
+            <Text style={styles.sectionTitle}>Products</Text>
+            <FlatList
+              data={products}
+              horizontal
+              keyExtractor={(item) => item.id}
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ paddingHorizontal: 16 }}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={styles.productCard}
+                  onPress={() => navigation.navigate("ProductDetail", { product: item })}
+                >
+                  <Image
+                    source={{ uri: item.images?.[0] || defaultProductImage }}
+                    style={styles.productImage}
+                  />
+                  <Text style={styles.productName}>{item.name}</Text>
+                  <Text style={styles.productPrice}>₦{item.price}</Text>
+                </TouchableOpacity>
+              )}
+            />
+          </>
+        )}
       </ScrollView>
     </View>
   );
@@ -227,6 +273,31 @@ const styles = StyleSheet.create({
   dotActive: {
     backgroundColor: "#386F4F",
   },
+  tabSwitcher: {
+    flexDirection: "row",
+    marginHorizontal: 16,
+    marginTop: 20,
+    marginBottom: 10,
+    backgroundColor: "#e0e0e0",
+    borderRadius: 8,
+  },
+  tabButton: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: "center",
+    borderRadius: 8,
+  },
+  tabText: {
+    fontSize: 16,
+    color: "#555",
+  },
+  activeTab: {
+    backgroundColor: "#386F4F",
+  },
+  activeTabText: {
+    color: "#fff",
+    fontWeight: "bold",
+  },
   infoContainer: {
     padding: 20,
     backgroundColor: "#FFF",
@@ -235,24 +306,45 @@ const styles = StyleSheet.create({
     marginTop: -10,
   },
   vendorCategory: {
-    fontSize: 18,
-    color: "#555",
-    marginBottom: 5,
+    fontSize: 16,
+    color: "#4E4D4B",
+    fontWeight: "bold",
+    marginBottom: 7,
   },
   vendorDescription: {
     fontSize: 16,
-    color: "#666",
-    marginBottom: 10,
+    color: "#4E4D4B",
+    marginBottom: 5,
+    fontWeight: "bold",
+  },
+  readMore: {
+    color: "#999",
+    marginTop: 5,
+    fontWeight: "bold",
   },
   locationContainer: {
     flexDirection: "row",
     alignItems: "center",
     marginTop: 10,
+    marginBottom: 10,
   },
   vendorLocation: {
     fontSize: 16,
-    color: "#888",
+    color: "#4E4D4B",
     marginLeft: 5,
+    fontWeight: "bold",
+  },
+  applyButton: {
+    marginTop: 20,
+    backgroundColor: "#386F4F",
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  applyButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
   },
   sectionTitle: {
     fontSize: 18,
@@ -303,5 +395,12 @@ const styles = StyleSheet.create({
     paddingVertical: 17,
     color: "#386F4F",
     textAlign: "center",
+  },
+  infoHeader: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "grey",
+    marginTop: 13,
+    marginBottom: 6,
   },
 });

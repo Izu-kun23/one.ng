@@ -7,24 +7,24 @@ import {
   Image,
   TouchableOpacity,
   Dimensions,
-  Modal,
-  Pressable,
   Alert,
+  ScrollView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import AddProducts from "./AddProducts";
 import Fire from "../../Fire";
 import { useNavigation, useRoute } from "@react-navigation/native";
+import Modal from "react-native-modal";
 
 const { width } = Dimensions.get("window");
 
 const VendorProducts = () => {
   const [modalVisible, setModalVisible] = useState(false);
-  const [addModalVisible, setAddModalVisible] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [showAddProduct, setShowAddProduct] = useState(false);
 
   const navigation = useNavigation();
   const route = useRoute();
@@ -35,7 +35,10 @@ const VendorProducts = () => {
     try {
       const vendorId = Fire.shared.uid;
       if (vendorId && shopId) {
-        const vendorProducts = await Fire.shared.getVendorProducts(vendorId, shopId);
+        const vendorProducts = await Fire.shared.getVendorProducts(
+          vendorId,
+          shopId
+        );
         setProducts(vendorProducts);
       } else {
         console.warn("No vendor ID or shop ID found");
@@ -68,15 +71,11 @@ const VendorProducts = () => {
     fetchProducts();
   };
 
-  const formatPrice = (price) => {
-    return price.toLocaleString("en-NG");
-  };
+  const formatPrice = (price) => price.toLocaleString("en-NG");
 
   const renderItem = ({ item }) => (
-    <View style={styles.card}>
-      <TouchableOpacity onPress={() => openModal(item)}>
-        <Image source={{ uri: item.images[0] }} style={styles.image} />
-      </TouchableOpacity>
+    <TouchableOpacity style={styles.card} onPress={() => openModal(item)}>
+      <Image source={{ uri: item.images[0] }} style={styles.image} />
       <View style={styles.info}>
         <Text style={styles.name}>{item.name}</Text>
         <Text style={styles.price}>₦{formatPrice(item.price)}</Text>
@@ -84,15 +83,11 @@ const VendorProducts = () => {
       </View>
       <TouchableOpacity
         style={styles.editBtn}
-        onPress={() =>
-          navigation.navigate("EditProducts", {
-            product: item,
-          })
-        }
+        onPress={() => navigation.navigate("EditProducts", { product: item })}
       >
         <Text style={styles.editText}>Edit</Text>
       </TouchableOpacity>
-    </View>
+    </TouchableOpacity>
   );
 
   const ListEmptyComponent = () => (
@@ -104,24 +99,31 @@ const VendorProducts = () => {
   return (
     <View style={styles.container}>
       {/* Header */}
-      <View style={styles.headerContainer}>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Ionicons name="chevron-back" size={30} color="black" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>My Products</Text>
-        <TouchableOpacity style={styles.plusButton} onPress={() => setAddModalVisible(true)}>
-          <Ionicons name="add-circle-outline" size={26} color="#228B22" />
-        </TouchableOpacity>
+      <View style={styles.heroSection}>
+        <View style={styles.heroOverlay} />
+        <View style={styles.heroContent}>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={styles.backButton}
+          >
+            <Ionicons name="chevron-back" size={28} color="#fff" />
+          </TouchableOpacity>
+          <Text style={styles.heroTitle}>My Products</Text>
+          <TouchableOpacity
+            onPress={() => setShowAddProduct(true)}
+            style={styles.addBtn}
+          >
+            <Ionicons name="add" size={28} color="#fff" />
+          </TouchableOpacity>
+        </View>
       </View>
 
-      {/* Loading */}
       {loading && (
         <View style={styles.loading}>
           <Text>Loading...</Text>
         </View>
       )}
 
-      {/* Product Grid */}
       <FlatList
         data={products}
         renderItem={renderItem}
@@ -134,41 +136,69 @@ const VendorProducts = () => {
         ListEmptyComponent={ListEmptyComponent}
       />
 
-      {/* Product Detail Modal */}
+      {/* Responsive Product Detail Modal with Boost */}
       <Modal
-        animationType="fade"
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={closeModal}
+        isVisible={modalVisible}
+        onBackdropPress={closeModal}
+        swipeDirection="down"
+        onSwipeComplete={closeModal}
+        style={styles.bottomModal}
+        propagateSwipe={true}
       >
-        <Pressable style={styles.modalOverlay} onPress={closeModal}>
-          <View style={styles.modalContent}>
+        <View style={[styles.bottomSheet, { maxHeight: "80%" }]}>
+          <View style={styles.dragHandle} />
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ alignItems: "center" }}
+          >
             {selectedProduct && (
               <>
-                <Image source={{ uri: selectedProduct.images[0] }} style={styles.modalImage} />
+                <Image
+                  source={{ uri: selectedProduct.images[0] }}
+                  style={styles.modalImage}
+                />
                 <Text style={styles.modalTitle}>{selectedProduct.name}</Text>
-                <Text style={styles.modalPrice}>₦{formatPrice(selectedProduct.price)}</Text>
-                <Text style={styles.modalStock}>Stock: {selectedProduct.stock}</Text>
+                <Text style={styles.modalPrice}>
+                  ₦{formatPrice(selectedProduct.price)}
+                </Text>
+                <Text style={styles.modalStock}>
+                  In Stock: {selectedProduct.stock}
+                </Text>
+                <TouchableOpacity
+                  style={styles.boostButton}
+                  onPress={() => {
+                    closeModal();
+                    navigation.navigate("VendorBoost", {
+                      product: selectedProduct,
+                    });
+                  }}
+                >
+                  <Ionicons name="flash" size={20} color="#fff" />
+                  <Text style={styles.boostText}>Boost</Text>
+                </TouchableOpacity>
               </>
             )}
-          </View>
-        </Pressable>
+          </ScrollView>
+        </View>
       </Modal>
 
-      {/* Add Product Modal */}
+      {/* Swipe-Up Add Product Modal */}
       <Modal
-        animationType="slide"
-        transparent={true}
-        visible={addModalVisible}
-        onRequestClose={() => setAddModalVisible(false)}
+        isVisible={showAddProduct}
+        onBackdropPress={() => setShowAddProduct(false)}
+        swipeDirection="down"
+        onSwipeComplete={() => setShowAddProduct(false)}
+        style={styles.bottomModal}
       >
-        <View style={styles.addProductModalContainer}>
-          <View style={styles.addProductContent}>
-            <TouchableOpacity onPress={() => setAddModalVisible(false)} style={styles.closeAddBtn}>
-              <Ionicons name="close" size={24} color="#000" />
-            </TouchableOpacity>
-            <AddProducts />
-          </View>
+        <View style={[styles.bottomSheet, { height: "90%" }]}>
+          <View style={styles.dragHandle} />
+          <AddProducts
+            shopId={shopId}
+            onClose={() => {
+              setShowAddProduct(false);
+              fetchProducts(); // Refresh products list
+            }}
+          />
         </View>
       </Modal>
     </View>
@@ -182,36 +212,38 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#F9F9F9",
   },
-  headerContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingTop: 20,
-    paddingBottom: 12,
+  heroSection: {
+    height: 110,
+    backgroundColor: "#10B981",
+    justifyContent: "flex-end",
+    paddingBottom: 16,
     paddingHorizontal: 20,
-    backgroundColor: "#fff",
-    height: 105,
+  },
+  heroOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.25)",
+  },
+  heroContent: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  heroTitle: {
+    color: "#fff",
+    fontSize: 22,
+    fontWeight: "bold",
   },
   backButton: {
-    borderRadius: 50,
-    padding: 15,
-    paddingTop: 32,
-    paddingLeft: 10,
+    padding: 6,
   },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "black",
-    paddingTop: 20,
-  },
-  plusButton: {
-    backgroundColor: "#fff",
+  addBtn: {
+    backgroundColor: "#059669",
+    padding: 10,
     borderRadius: 50,
     shadowColor: "#000",
     shadowOpacity: 0.2,
     shadowRadius: 5,
-    padding: 10,
-    marginTop: 18,
+    elevation: 5,
   },
   list: {
     padding: 18,
@@ -224,7 +256,7 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: "#fff",
     width: (width - 48) / 2,
-    borderRadius: 12,
+    borderRadius: 16,
     overflow: "hidden",
     elevation: 3,
     shadowColor: "#000",
@@ -255,7 +287,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   editBtn: {
-    backgroundColor: "#228B22",
+    backgroundColor: "#10B981",
     paddingVertical: 8,
     alignItems: "center",
   },
@@ -264,18 +296,36 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     fontSize: 14,
   },
-  modalOverlay: {
+  emptyContainer: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
     justifyContent: "center",
     alignItems: "center",
   },
-  modalContent: {
+  emptyText: {
+    fontSize: 16,
+    color: "#666",
+  },
+  loading: {
+    paddingTop: 50,
+    alignItems: "center",
+  },
+  bottomModal: {
+    justifyContent: "flex-end",
+    margin: 0,
+  },
+  bottomSheet: {
     backgroundColor: "#fff",
     padding: 20,
-    borderRadius: 14,
-    width: "80%",
-    alignItems: "center",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+  },
+  dragHandle: {
+    width: 40,
+    height: 5,
+    backgroundColor: "#ccc",
+    borderRadius: 3,
+    alignSelf: "center",
+    marginBottom: 10,
   },
   modalImage: {
     width: "100%",
@@ -288,43 +338,38 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginBottom: 8,
     color: "#333",
+    textAlign: "center",
   },
   modalPrice: {
     fontSize: 16,
     color: "#228B22",
     marginBottom: 6,
+    textAlign: "center",
   },
   modalStock: {
     fontSize: 14,
     color: "#666",
+    textAlign: "center",
   },
-  addProductModalContainer: {
-    flex: 1,
-    justifyContent: "flex-end",
-    backgroundColor: "rgba(0,0,0,0.5)",
-  },
-  addProductContent: {
-    backgroundColor: "#fff",
-    height: "90%",
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingTop: 10,
-  },
-  closeAddBtn: {
-    alignSelf: "flex-end",
-    padding: 16,
-  },
-  loading: {
-    paddingTop: 50,
+  boostButton: {
+    marginTop: 20,
+    backgroundColor: "#facc15",
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 30,
+    flexDirection: "row",
     alignItems: "center",
+    alignSelf: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 5,
   },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  emptyText: {
+  boostText: {
+    color: "#000",
+    fontWeight: "600",
     fontSize: 16,
-    color: "#666",
+    marginLeft: 8,
   },
 });

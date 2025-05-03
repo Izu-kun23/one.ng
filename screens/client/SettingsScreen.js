@@ -44,9 +44,14 @@ export default class SettingsScreen extends React.Component {
   }
 
   handleLogout = () => {
-    Fire.shared.signOut();
+    Fire.shared.signOut(); // Your custom logout logic
+  
     this.setState({ user: {} });
-    this.props.navigation.navigate("Auth");
+  
+    this.props.navigation.reset({
+      index: 0,
+      routes: [{ name: "Auth" }], // Ensure the name matches exactly from your root navigator
+    });
   };
 
   toggleTheme = () => {
@@ -174,60 +179,61 @@ export default class SettingsScreen extends React.Component {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f9f9f9",
+    backgroundColor: "#FAFAFA", // light grayish background
   },
   profileHeader: {
     alignItems: "center",
-    paddingVertical: verticalScale(16),
-    backgroundColor: "#fff",
-    borderBottomColor: "#eee",
+    paddingVertical: verticalScale(20),
+    backgroundColor: "#FFFFFF",
+    borderBottomColor: "#E5E7EB", // Tailwind's gray-200
     borderBottomWidth: 1,
   },
   avatar: {
-    width: scale(80),
-    height: scale(80),
-    borderRadius: scale(40),
-    marginBottom: verticalScale(6),
+    width: scale(84),
+    height: scale(84),
+    borderRadius: scale(42),
+    marginBottom: verticalScale(8),
   },
   name: {
     fontSize: RFValue(18),
     fontWeight: "600",
-    color: "#333",
+    color: "#111827", // Tailwind's gray-900
   },
   editProfileButton: {
-    marginTop: verticalScale(4),
-    paddingHorizontal: scale(12),
-    paddingVertical: verticalScale(4),
-    borderRadius: scale(15),
-    borderColor: "#ccc",
+    marginTop: verticalScale(6),
+    paddingHorizontal: scale(16),
+    paddingVertical: verticalScale(6),
+    borderRadius: scale(999), // Fully rounded
+    borderColor: "#D1D5DB", // Tailwind's gray-300
     borderWidth: 1,
+    backgroundColor: "#F9FAFB",
   },
   editProfileText: {
-    color: "#333",
+    color: "#111827",
     fontSize: RFValue(12),
     fontWeight: "500",
   },
   cardContainer: {
-    paddingHorizontal: scale(12),
-    marginTop: verticalScale(14),
+    paddingHorizontal: scale(16),
+    marginTop: verticalScale(20),
   },
   card: {
-    backgroundColor: "#fff",
-    borderRadius: scale(6),
-    marginBottom: verticalScale(10),
-    paddingHorizontal: scale(12),
-    paddingVertical: verticalScale(6),
-    elevation: 1,
+    backgroundColor: "#FFFFFF",
+    borderRadius: scale(12),
+    marginBottom: verticalScale(16),
+    paddingHorizontal: scale(16),
+    paddingVertical: verticalScale(10),
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   cardItem: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: verticalScale(8),
-    borderBottomColor: "#eee",
+    paddingVertical: verticalScale(12),
+    borderBottomColor: "#E5E7EB",
     borderBottomWidth: 1,
   },
   lastCardItem: {
@@ -235,65 +241,69 @@ const styles = StyleSheet.create({
   },
   cardText: {
     fontSize: RFValue(14),
-    color: "#333",
+    color: "#374151", // Tailwind gray-700
     fontWeight: "500",
   },
   deleteText: {
-    color: "#E74C3C",
+    color: "#EF4444", // Tailwind red-500
     fontWeight: "600",
     fontSize: RFValue(14),
   },
   icon: {
-    marginRight: scale(6),
+    marginRight: scale(8),
   },
   customerOrdersButton: {
     flexDirection: "row",
-    backgroundColor: "#FFF",
-    paddingVertical: verticalScale(10),
-    marginTop: verticalScale(16),
-    marginHorizontal: scale(70),
-    borderRadius: scale(6),
+    backgroundColor: "#FFFFFF",
+    paddingVertical: verticalScale(12),
+    marginTop: verticalScale(20),
+    marginHorizontal: scale(80),
+    borderRadius: scale(10),
     alignItems: "center",
     justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 2,
     elevation: 1,
   },
   customerOrdersText: {
-    color: "#000",
+    color: "#111827",
     fontSize: RFValue(14),
     fontWeight: "600",
-    marginLeft: scale(4),
+    marginLeft: scale(6),
   },
   vendorButton: {
     flexDirection: "row",
-    backgroundColor: "#FFF",
-    paddingVertical: verticalScale(10),
-    marginTop: verticalScale(16),
-    marginHorizontal: scale(70),
-    borderRadius: scale(6),
+    backgroundColor: "#FFFFFF",
+    paddingVertical: verticalScale(12),
+    marginTop: verticalScale(14),
+    marginHorizontal: scale(80),
+    borderRadius: scale(10),
     alignItems: "center",
     justifyContent: "center",
     elevation: 1,
   },
   vendorText: {
-    color: "#000",
+    color: "#111827",
     fontSize: RFValue(14),
     fontWeight: "600",
-    marginLeft: scale(4),
+    marginLeft: scale(6),
   },
   logoutButton: {
     flexDirection: "row",
-    backgroundColor: "#386F4F",
-    paddingVertical: verticalScale(10),
-    marginTop: verticalScale(10),
-    marginHorizontal: scale(70),
-    borderRadius: scale(6),
+    backgroundColor: "#16A34A", // Tailwind green-600
+    paddingVertical: verticalScale(12),
+    marginTop: verticalScale(12),
+    marginHorizontal: scale(80),
+    borderRadius: scale(10),
     alignItems: "center",
     justifyContent: "center",
   },
   logoutButtonText: {
-    color: "#fff",
+    color: "#FFFFFF",
     fontSize: RFValue(14),
     fontWeight: "600",
-    marginLeft: scale(4),
+    marginLeft: scale(6),
   },
 });

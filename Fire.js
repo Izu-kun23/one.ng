@@ -13,6 +13,7 @@ import {
   getDoc,
   deleteDoc,
   getDocs,
+  onSnapshot,
   updateDoc,
   query,
   where,
@@ -622,6 +623,33 @@ class Fire {
     }
   };
 
+  clearVendorNotifications = async (vendorId) => {
+    try {
+      const notifCollection = collection(this.firestore, "vendors", vendorId, "notifications");
+      
+      // Fetch all notifications for the given vendor
+      const snapshot = await getDocs(notifCollection);
+      
+      if (snapshot.empty) {
+        console.log("No notifications to clear.");
+        return;
+      }
+  
+      // Iterate over each notification and delete it
+      const deletePromises = snapshot.docs.map((doc) => deleteDoc(doc.ref));
+  
+      // Wait for all delete operations to complete
+      await Promise.all(deletePromises);
+  
+      console.log("✅ All notifications cleared successfully.");
+    } catch (error) {
+      console.error("❌ Error clearing vendor notifications:", error);
+    }
+  };
+
+   // Fire.js or your Fire class
+
+
   getShopById = async (shopId) => {
     try {
       const docSnap = await getDoc(doc(this.firestore, 'shops', shopId));
@@ -764,11 +792,17 @@ addOrder = async (orderData) => {
   }
 
   try {
+    // Add the order
     const orderRef = await addDoc(collection(this.firestore, "orders"), {
       ...orderData,
       userId,
-      status: "processing", // you can adjust status flow (pending, paid, shipped, etc.)
+      status: "processing",
       createdAt: new Date().toISOString(),
+    });
+
+    // Update the same doc with its order ID
+    await updateDoc(orderRef, {
+      orderId: orderRef.id,
     });
 
     console.log("✅ Order placed with ID:", orderRef.id);
@@ -847,6 +881,50 @@ getAllOrdersForVendor = async (vendorId) => {
   };
 
 
+  getOrderForVendorById = async (orderId, vendorId) => {
+    if (!orderId || !vendorId) {
+      console.error("❌ Order ID and Vendor ID are required");
+      return null;
+    }
+  
+    try {
+      // Reference to the orders collection
+      const orderRef = doc(this.firestore, "orders", orderId);
+  
+      // Fetch the order document
+      const orderSnap = await getDoc(orderRef);
+  
+      if (!orderSnap.exists()) {
+        console.log("❌ Order not found with ID:", orderId);
+        return null;
+      }
+  
+      // Get order data
+      const orderData = orderSnap.data();
+  
+      // Check if the vendorId is associated with any of the items in the order
+      const vendorOrderItems = orderData.items.filter(
+        (item) => item.vendorId === vendorId
+      );
+  
+      if (vendorOrderItems.length === 0) {
+        console.log("❌ No items from vendor found in this order.");
+        return null;
+      }
+  
+      // Return the full order data if vendor is found
+      return {
+        id: orderSnap.id,
+        ...orderData,
+        vendorOrderItems, // Only return items related to the vendor
+      };
+    } catch (error) {
+      console.error("❌ Error fetching order for vendor:", error);
+      return null;
+    }
+  };
+
+
 // removeOrder = async (orderId) => {
 //   if (!orderId) return;
 
@@ -859,6 +937,56 @@ getAllOrdersForVendor = async (vendorId) => {
 //   }
 // };
 
+//  countAllOrders = async () => {
+//   try {
+//     // Reference to the 'orders' collection
+//     const ordersRef = collection(db, 'orders');
+    
+//     // Query to get all documents in the 'orders' collection (no filtering)
+//     const q = query(ordersRef);
+    
+//     // Get the documents matching the query
+//     const querySnapshot = await getDocs(q);
+    
+//     // Count the number of orders
+//     const orderCount = querySnapshot.size; // 'size' gives the number of documents in the query result
+//     console.log('Total number of orders:', orderCount);
+//     return orderCount;
+//   } catch (error) {
+//     console.error('Error getting orders count: ', error);
+//     return 0; // Return 0 if there's an error
+//   }
+// };
+
+// getOrdersByVendorId = async (vendorId) => {
+//   if (!vendorId) {
+//     console.error("❌ Vendor ID is missing!");
+//     return [];
+//   }
+
+//   try {
+//     console.log('Fetching orders for vendor:', vendorId);
+//     const ordersRef = collection(firestore, 'orders');
+//     const q = query(ordersRef, where('vendorId', '==', vendorId));
+
+//     const querySnapshot = await getDocs(q);
+
+//     if (querySnapshot.empty) {
+//       console.log('No orders found for this vendor');
+//       return [];
+//     }
+
+//     const orders = querySnapshot.docs.map((doc) => ({
+//       id: doc.id,
+//       ...doc.data(),
+//     }));
+
+//     return orders; // Return the list of orders
+//   } catch (error) {
+//     console.error('❌ Error fetching orders by vendor ID:', error);
+//     return []; // Return an empty array in case of error
+//   }
+// };
 
 
 

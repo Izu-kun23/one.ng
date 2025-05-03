@@ -132,12 +132,10 @@ const ProductDetail = ({ route, navigation }) => {
 
         <View style={styles.buttonsContainer}>
           <TouchableOpacity style={styles.button} onPress={handleAddToBasket}>
-            <Text style={styles.buttonText}>Add to Basket</Text>
+            <Text style={styles.buttonText}>Add to Cart</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.button} onPress={handleBuyNow}>
-            <Text style={styles.buttonText}>Buy Now</Text>
-          </TouchableOpacity>
+          
 
           <TouchableOpacity style={styles.favoriteButton} onPress={handleToggleFavorite}>
             <Ionicons

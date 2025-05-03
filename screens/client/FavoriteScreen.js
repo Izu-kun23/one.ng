@@ -41,14 +41,8 @@ const FavoriteScreen = () => {
       );
 
       setSections([
-        {
-          title: "Favorite Shops",
-          data: shopData.filter(Boolean),
-        },
-        {
-          title: "Favorite Products",
-          data: productData.filter(Boolean),
-        },
+        { title: "Favorite Shops", data: shopData.filter(Boolean) },
+        { title: "Favorite Products", data: productData.filter(Boolean) },
       ]);
     } catch (error) {
       console.error("❌ Error refreshing favorites:", error);
@@ -67,12 +61,12 @@ const FavoriteScreen = () => {
         source={{ uri: item.images?.[0] || defaultImage }}
         style={styles.itemImage}
       />
-      <Text style={styles.itemName}>{item.name}</Text>
-      {item.type === "shop" ? (
-        <Text style={styles.itemDescription}>{item.about}</Text>
-      ) : (
-        <Text style={styles.itemPrice}>₦{item.price}</Text>
-      )}
+      <View style={styles.textContent}>
+        <Text style={styles.itemName}>{item.name}</Text>
+        {item.type === "product" && (
+          <Text style={styles.itemPrice}>₦{Number(item.price).toLocaleString()}</Text>
+        )}
+      </View>
     </TouchableOpacity>
   );
 
@@ -103,61 +97,77 @@ const FavoriteScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F5F5F5" },
+  container: {
+    flex: 1,
+    backgroundColor: "#F8F9FA", // Light gray background for a soft feel
+  },
   header: {
     paddingTop: 64,
-    paddingBottom: 14,
-    backgroundColor: "#386F4F",
+    paddingBottom: 20,
+    backgroundColor: "#386F4F", // Soft blue header
     alignItems: "center",
     justifyContent: "center",
+   
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 6,
   },
-  headerTitle: { fontSize: 24, fontWeight: "bold", color: "#FFF" },
+  headerTitle: {
+    fontSize: 26,
+    fontWeight: "600",
+    color: "#FFFFFF", // Soft white text
+  },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    paddingHorizontal: 16,
-    marginTop: 20,
-    marginBottom: 8,
-    color: "#333",
+    fontSize: 20,
+    fontWeight: "600",
+    paddingHorizontal: 20,
+    marginTop: 30,
+    marginBottom: 12,
+    color: "#495057", // Darker gray for readability
   },
   emptyText: {
     textAlign: "center",
-    color: "#999",
-    fontSize: 14,
-    marginTop: 20,
+    color: "#868E96",
+    fontSize: 16,
+    marginTop: 40,
   },
   listContent: {
     paddingBottom: 40,
   },
   card: {
-    backgroundColor: "#fff",
-    borderRadius: 8,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16, // Rounded corners for soft UI
     marginHorizontal: 16,
-    marginBottom: 12,
-    padding: 12,
-    elevation: 2,
+    marginBottom: 20,
+    padding: 16,
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 5 },
+    elevation: 4,
+    overflow: "hidden", // Prevents image overflow from rounded corners
   },
   itemImage: {
     width: "100%",
-    height: 150,
-    borderRadius: 8,
+    height: 180,
+    borderRadius: 16, // Rounded image corners
+    resizeMode: "cover",
+  },
+  textContent: {
+    marginTop: 12,
   },
   itemName: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#333",
-    marginTop: 8,
-  },
-  itemDescription: {
-    fontSize: 14,
-    color: "#666",
-    marginTop: 5,
+    fontSize: 18,
+    fontWeight: "500",
+    color: "#343A40", // Slightly muted color for text
   },
   itemPrice: {
-    fontSize: 14,
-    color: "#000",
-    marginTop: 5,
-    fontWeight: "bold",
+    fontSize: 15,
+    color: "#28A745", // Soft green price color
+    fontWeight: "600",
+    marginTop: 6,
   },
 });
 

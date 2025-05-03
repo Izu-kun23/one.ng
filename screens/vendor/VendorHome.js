@@ -12,6 +12,8 @@ import * as Animatable from 'react-native-animatable';
 import { LineChart } from 'react-native-chart-kit';
 import Header from '../../components/Header';
 import Fire from '../../Fire';
+import { doc, deleteDoc } from 'firebase/firestore';
+import { Alert } from 'react-native';
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -32,6 +34,7 @@ const VendorHome = () => {
   const [animationKey, setAnimationKey] = useState(Date.now());
   const [avatar, setAvatar] = useState(null);
   const [vendorName, setVendorName] = useState('');
+  const [orderCount, setOrderCount] = useState(0);
   const [notifications, setNotifications] = useState([]);
 
   const toggleView = () => {
@@ -65,7 +68,6 @@ const VendorHome = () => {
       }
 
       const notifData = await Fire.shared.getVendorNotifications(uid);
-
       const enriched = await Promise.all(
         notifData.map(async (notif) => {
           const userData = await Fire.shared.getUserData(notif.userId);
@@ -88,6 +90,10 @@ const VendorHome = () => {
       );
 
       setNotifications(enriched.reverse());
+
+      const vendorOrders = await Fire.shared.getAllOrdersForVendor(uid);
+      setOrderCount(vendorOrders.length);
+
     } catch (err) {
       console.error('❌ Failed to fetch vendor data or notifications:', err);
     }
@@ -96,6 +102,34 @@ const VendorHome = () => {
   useEffect(() => {
     fetchData();
   }, []);
+
+  const clearNotifications = async () => {
+    try {
+      const uid = Fire.shared.uid; // Get the current user ID
+      if (!uid || notifications.length === 0) {
+        Alert.alert("No Notifications", "There are no notifications to clear.");
+        return;
+      }
+
+      // Display a loading indicator before starting deletion
+      setRefreshing(true);
+
+      const deletePromises = notifications.map(async (notif) => {
+        const notifRef = doc(Fire.shared.firestore, "vendors", uid, "notifications", notif.id);
+        await deleteDoc(notifRef); // Deleting notification from Firestore
+      });
+
+      await Promise.all(deletePromises); // Wait for all deletions to complete
+
+      setNotifications([]); // Clear notifications in the UI
+      setRefreshing(false); // Hide loading indicator after clearing
+      Alert.alert("Success", "All notifications have been cleared.");
+    } catch (error) {
+      console.error("❌ Error clearing notifications:", error);
+      setRefreshing(false); // Hide loading indicator in case of error
+      Alert.alert("Error", "Failed to clear notifications. Please try again.");
+    }
+};
 
   return (
     <View style={styles.container}>
@@ -110,10 +144,11 @@ const VendorHome = () => {
           duration={600}
           useNativeDriver
         >
+          {/* Cards Section */}
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.cardRow}>
             {[
               { title: 'Total Sales', value: '₦150,000' },
-              { title: 'Orders', value: '320' },
+              { title: 'Orders', value: `${orderCount}` },
               { title: 'Pending Orders', value: '15' },
               { title: 'Products', value: '57' },
             ].map((item, index) => (
@@ -124,6 +159,7 @@ const VendorHome = () => {
             ))}
           </ScrollView>
 
+          {/* Toggle Button */}
           <View style={styles.toggleContainer}>
             <TouchableOpacity onPress={toggleView} style={styles.toggleButton}>
               <Text style={styles.toggleText}>
@@ -132,6 +168,7 @@ const VendorHome = () => {
             </TouchableOpacity>
           </View>
 
+          {/* Sales Overview */}
           <Text style={styles.sectionTitle}>Sales Overview ({viewMode})</Text>
           <LineChart
             data={chartData}
@@ -155,7 +192,16 @@ const VendorHome = () => {
             style={styles.chart}
           />
 
-          <Text style={styles.sectionTitle}>Notifications</Text>
+          {/* Notifications */}
+          <View style={styles.notificationHeader}>
+            <Text style={styles.sectionTitle}>Notifications</Text>
+            {notifications.length > 0 && (
+              <TouchableOpacity onPress={clearNotifications}>
+                <Text style={styles.clearButton}>Clear All</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+
           {notifications.length === 0 ? (
             <Text style={styles.emptyText}>You have no notifications yet.</Text>
           ) : (
@@ -213,6 +259,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   chart: { borderRadius: 12, marginHorizontal: 16 },
+  notificationHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    marginBottom: 8,
+  },
   notification: {
     backgroundColor: '#fff',
     padding: 16,
@@ -223,6 +276,11 @@ const styles = StyleSheet.create({
   },
   notificationText: { color: '#333', fontSize: 14 },
   notificationTime: { fontSize: 11, color: '#999', marginTop: 4 },
+  clearButton: {
+    color: '#D1495B',
+    fontWeight: 'bold',
+    fontSize: 13,
+  },
   emptyText: {
     textAlign: 'center',
     color: '#888',

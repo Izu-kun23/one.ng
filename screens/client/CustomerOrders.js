@@ -44,10 +44,9 @@ const CustomerOrders = ({ navigation }) => {
   };
 
   const filterOrders = (ordersList, showPast) => {
-    const now = new Date();
     const filtered = ordersList.filter(order => {
-      const orderDate = new Date(order.createdAt?.toDate?.() || order.createdAt);
-      return showPast ? orderDate < now : orderDate <= now;
+      const isDelivered = order.status === 'Delivered';
+      return showPast ? isDelivered : !isDelivered;
     });
     setFilteredOrders(filtered);
   };
@@ -66,7 +65,6 @@ const CustomerOrders = ({ navigation }) => {
   const getStatusStyle = (status) => {
     switch (status) {
       case 'Pending':
-        return { backgroundColor: '#F5BA1D', color: '#fff' };
       case 'Processing':
         return { backgroundColor: '#F5BA1D', color: '#fff' };
       case 'Shipped':
@@ -95,6 +93,7 @@ const CustomerOrders = ({ navigation }) => {
 
     return (
       <View style={styles.card}>
+        {/* Status and Order Number */}
         <View style={styles.cardHeader}>
           <Text style={styles.orderNumber}>Order #{item.orderNumber}</Text>
           <View style={[styles.statusBadge, { backgroundColor: statusStyle.backgroundColor }]}>
@@ -104,10 +103,12 @@ const CustomerOrders = ({ navigation }) => {
           </View>
         </View>
 
+        {/* Order Date */}
         <Text style={styles.orderDate}>
           {date.toLocaleDateString('en-NG')} at {date.toLocaleTimeString('en-NG', { hour: '2-digit', minute: '2-digit' })}
         </Text>
 
+        {/* Product Details */}
         <FlatList
           data={item.items}
           renderItem={renderItem}
@@ -116,6 +117,7 @@ const CustomerOrders = ({ navigation }) => {
           scrollEnabled={false}
         />
 
+        {/* Divider and Total */}
         <View style={styles.divider} />
         <Text style={styles.total}>Total: ₦{item.total?.toLocaleString('en-NG') || '0'}</Text>
       </View>
@@ -163,7 +165,6 @@ const CustomerOrders = ({ navigation }) => {
         />
       )}
 
-      {/* ✅ Go to Home Button */}
       <TouchableOpacity
         onPress={() => navigation.navigate('Main')}
         style={styles.homeButton}
@@ -179,7 +180,7 @@ export default CustomerOrders;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F4F5F7',
+    backgroundColor: '#F9FAFB',
   },
   toggleContainer: {
     alignItems: 'center',
@@ -188,23 +189,27 @@ const styles = StyleSheet.create({
   toggleButton: {
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: '#ddd',
+    borderRadius: 24,
+    backgroundColor: '#E5E7EB',
   },
   toggleActive: {
-    backgroundColor: '#386F4F',
+    backgroundColor: '#10B981',
   },
   toggleText: {
     color: '#fff',
-    fontWeight: 'bold',
+    fontWeight: '600',
   },
   card: {
-    backgroundColor: '#FFF',
-    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
     marginHorizontal: 16,
     marginBottom: 16,
     padding: 16,
-    elevation: 3,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 6,
+    elevation: 2,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -214,12 +219,12 @@ const styles = StyleSheet.create({
   orderNumber: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
+    color: '#111827',
   },
   statusBadge: {
     paddingVertical: 4,
     paddingHorizontal: 10,
-    borderRadius: 50,
+    borderRadius: 999,
   },
   statusText: {
     fontSize: 12,
@@ -228,60 +233,68 @@ const styles = StyleSheet.create({
   orderDate: {
     marginTop: 6,
     fontSize: 13,
-    color: '#888',
+    color: '#6B7280',
   },
   productCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F9F9F9',
-    borderRadius: 8,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 10,
     marginBottom: 10,
     padding: 10,
+    marginTop: 12, // Added margin for separation between products
   },
   image: {
     width: 55,
     height: 55,
     borderRadius: 8,
     marginRight: 12,
+    backgroundColor: '#E5E7EB',
   },
   productName: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '600',
-    marginBottom: 2,
-    color: '#222',
+    marginBottom: 4, // Added margin for better spacing
+    color: '#1F2937',
   },
   details: {
-    fontSize: 13,
-    color: '#666',
+    fontSize: 14,
+    color: '#6B7280',
+    marginBottom: 2, // Added margin for spacing between quantity and price
   },
   total: {
-    fontSize: 15,
-    fontWeight: 'bold',
+    fontSize: 16,
+    fontWeight: '700',
     textAlign: 'right',
-    color: '#228B22',
-    marginTop: 10,
+    color: '#059669',
+    marginTop: 12, // Increased margin to give space before total amount
   },
   divider: {
     height: 1,
-    backgroundColor: '#eee',
-    marginTop: 8,
+    backgroundColor: '#E5E7EB',
+    marginTop: 12, // Adjusted margin for a cleaner look
   },
   emptyText: {
     textAlign: 'center',
-    color: '#888',
+    color: '#9CA3AF',
     marginTop: 40,
     fontSize: 16,
   },
   homeButton: {
-    backgroundColor: '#386F4F',
+    backgroundColor: '#10B981',
     paddingVertical: 15,
-    margin: 25,
-    borderRadius: 10,
+    margin: 58,
+    borderRadius: 12,
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 6,
+    elevation: 3,
   },
   homeButtonText: {
-    color: '#fff',
+    color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
   },
 });

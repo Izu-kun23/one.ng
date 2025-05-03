@@ -38,6 +38,7 @@ import ProductDetail from "./screens/client/ProductDetail.js";
 import Basket from "./screens/client/Basket.js";
 import Checkout from "./screens/client/Checkout.js";
 import CustomerOrders from "./screens/client/CustomerOrders.js";
+import VendorBoost from "./screens/vendor/VendorBoost.js";
 
 // Navigation Setup
 const Stack = createNativeStackNavigator();
@@ -227,24 +228,22 @@ function AppStack() {
         }}
       />
 
-      <Stack.Screen 
-      name="Checkout" 
-      component={Checkout} 
-      options={{
-        title: "Checkout",
-        headerShown: false,
-      }}
-      
+      <Stack.Screen
+        name="Checkout"
+        component={Checkout}
+        options={{
+          title: "Checkout",
+          headerShown: false,
+        }}
       />
 
-<Stack.Screen 
-      name="CustomerOrders" 
-      component={CustomerOrders} 
-      options={{
-        title: "Customer Orders",
-        headerShown: false,
-      }}
-      
+      <Stack.Screen
+        name="CustomerOrders"
+        component={CustomerOrders}
+        options={{
+          title: "Customer Orders",
+          headerShown: false,
+        }}
       />
     </Stack.Navigator>
   );
@@ -372,6 +371,14 @@ function VendorStack() {
       <Stack.Screen
         name="EditShop"
         component={EditShop}
+        options={{
+          presentation: "modal",
+          headerShown: false, // optional, depending on your modal design
+        }}
+      />
+      <Stack.Screen
+        name="VendorBoost"
+        component={VendorBoost}
         options={{
           presentation: "modal",
           headerShown: false, // optional, depending on your modal design

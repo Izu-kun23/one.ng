@@ -54,7 +54,7 @@ const Header4 = ({ searchText, setSearchText }) => {
     </TouchableOpacity>
 
     <TouchableOpacity onPress={() => navigation.navigate("Basket")}>
-      <Ionicons name="basket-outline" size={28} color="#fff" />
+      <Ionicons name="cart-outline" size={28} color="#fff" />
     </TouchableOpacity>
   </View>
 </View>
